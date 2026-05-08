@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username String @unique
+  passwordHash String
+  createdAt DateTime @default(now())
+
+  bills Bill[]
+}
+
+model Bill {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
+  userId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  persons Person[]
+}
+
+model Person {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
+  billId String @db.Uuid
+
+  bill Bill @relation(fields: [billId], references: [id])
+
+  items Item[]
+}
+
+model Item {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  personId String @db.Uuid
+
+  person Person @relation(fields: [personId], references: [id])
+
+  name String
+  price Decimal
+  createdAt DateTime @default(now())
+}
+
+
