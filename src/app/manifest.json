@@ -1,0 +1,23 @@
+{
+  "name": "SplitPals",
+  "short_name": "SplitPal",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#FFF5EE",
+  "background_color": "#FFF5EE",
+  "display": "standalone",
+  "start_url": "/",
+  "description": "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly."
+}

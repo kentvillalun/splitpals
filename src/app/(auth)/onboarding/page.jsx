@@ -1,16 +1,17 @@
 "use client";
 
 import { Page } from "@/app/components/layout/Page";
-import { PageContent } from "@/app/components/layout/PageContent";
 import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
+import { DesktopGuard } from "@/app/components/DesktopGuard";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   return (
     <>
-      <Page isGradient={true}>
+      <DesktopGuard />
+      <Page isGradient={true} className="lg:hidden">
         <div
           className={`flex-col justify-evenly min-h-svh w-full max-w-md p-4 pt-12 pb-10 overflow-x-hidden ${step === 1 ? "flex" : "hidden"}`}
         >
@@ -46,7 +47,6 @@ export default function OnboardingPage() {
                 Next
               </button>
             </div>
-            
           </div>
         </div>
       </Page>
