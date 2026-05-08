@@ -1,9 +1,9 @@
 import { haptics } from "bzzz";
 
 export const haptics = {
-  light: () => navigator.selection(), // casual navigation, Next, back buttons
-  medium: () => navigator.snap(), // confirmations, Continue, form submit
-  success: () => navigator.success(), // bill created, share sent, settled
-  error: () => navigator.error(), // validation error, network fail
-  warning: () => navigator.toggle(), // confirmation modal, destructive action
+  light: () => haptics.selection(), // casual navigation, Next, back buttons
+  medium: () => haptics.snap(), // confirmations, Continue, form submit
+  success: () => haptics.success(), // bill created, share sent, settled
+  error: () => haptics.error(), // validation error, network fail
+  warning: () => haptics.toggle(), // confirmation modal, destructive action
 };
