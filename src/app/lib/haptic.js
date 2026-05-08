@@ -1,6 +1,6 @@
 import { haptics } from "bzzz";
 
-export const haptics = {
+export const haptic = {
   light: () => haptics.selection(), // casual navigation, Next, back buttons
   medium: () => haptics.snap(), // confirmations, Continue, form submit
   success: () => haptics.success(), // bill created, share sent, settled

@@ -6,7 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { motion } from "framer-motion";
-import { haptics } from "@/app/lib/haptics";
+import { haptic } from "@/app/lib/haptic";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -52,7 +52,7 @@ export default function OnboardingPage() {
                     className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button"
                     onClick={() => {
                       setStep(step + 1);
-                      haptics.light()
+                      haptic.light()
                     }}
                   >
                     Next
@@ -93,7 +93,7 @@ export default function OnboardingPage() {
                     className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button"
                     onClick={() => {
                       setStep(step + 1);
-                      haptics.light()
+                      haptic.light()
                     }}
                   >
                     Next
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
                     className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button flex items-center justify-center"
                     href={"/username"}
                     onClick={() => {
-                        haptics.medium()
+                        haptic.medium()
                     }}
                   >
                     Get Started
