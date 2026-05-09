@@ -16,6 +16,10 @@ export const metadata = {
   description: "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly.",
 };
 
+export const viewport = {
+  userScalable: false
+}
+
 export default function RootLayout({ children }) {
   return (
     <html
