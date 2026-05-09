@@ -8,7 +8,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const Page = ({ className = "", children, isGradient = false }) => {
   return (
     <main
-      className={`relative min-h-svh flex justify-center ${isGradient ? "bg-linear-to-b from-[#FFFFFF] from-47% to-[#FCB17D]" : ""} ${jakarta.className} ${className}`}
+      className={`relative min-h-svh flex ${isGradient ? "bg-linear-to-b from-[#FFFFFF] from-47% to-[#FCB17D]" : ""} ${jakarta.className} ${className}`}
     >
       {children}
     </main>

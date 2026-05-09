@@ -16,7 +16,7 @@ export default function OnboardingPage() {
       <DesktopGuard />
       <Page
         isGradient={true}
-        className="lg:hidden overflow-hidden flex-col max-h-screen justify-items" 
+        className="lg:hidden overflow-hidden flex-col max-h-screen justify-center" 
       >
         
         <div className="overflow-hidden w-full ">
@@ -29,7 +29,7 @@ export default function OnboardingPage() {
             <div
               className={`flex-col justify-evenly  min-h-full min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-[#1A1A1A] mb-6">
+              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-1.svg"}
@@ -48,7 +48,7 @@ export default function OnboardingPage() {
             
               <div className="mt-10">
                 <div className="grid grid-cols-7 h-1 max-w-30 items-center justify-center mx-auto gap-1">
-                  <div className="col-span-3 bg-[#F97316] h-0.75 rounded-2xl"></div>
+                  <div className="col-span-3 bg-primary h-0.75 rounded-2xl"></div>
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
                 </div>
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
             <div
               className={`flex-col justify-evenly min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-[#1A1A1A] mb-6">
+              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-2.svg"}
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
               <div className="mt-10">
                 <div className="grid grid-cols-7 h-0.75 max-w-30 items-center justify-center mx-auto gap-1">
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
-                  <div className="col-span-3 bg-[#F97316] h-0.75 rounded-2xl"></div>
+                  <div className="col-span-3 bg-primary h-0.75 rounded-2xl"></div>
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
                 </div>
               </div>
@@ -91,7 +91,7 @@ export default function OnboardingPage() {
             <div
               className={`flex-col justify-evenly  min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-[#1A1A1A] mb-6">
+              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-3.svg"}
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
                 <div className="grid grid-cols-7 h-0.75 max-w-30 items-center justify-center mx-auto gap-1">
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
                   <div className="bg-[#E8E8E8] h-0.75 rounded-2xl col-span-2"></div>
-                  <div className="col-span-3 bg-[#F97316] h-0.75 rounded-2xl"></div>
+                  <div className="col-span-3 bg-primary h-0.75 rounded-2xl"></div>
                 </div>
               </div>
             </div>
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
         <div className="flex justify-between py-6 px-10 text-[14px] ">
           {step !== 3 ? (
             <button
-              className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button"
+              className="bg-primary min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button"
               onClick={() => {
                 setStep(step + 1);
                 haptic.light();
@@ -131,8 +131,8 @@ export default function OnboardingPage() {
             </button>
           ) : (
             <Link
-              className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button flex items-center justify-center"
-              href={"/username"}
+              className="bg-primary min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button flex items-center justify-center"
+              href={"/signup"}
               onClick={() => {
                 haptic.light();
               }}
