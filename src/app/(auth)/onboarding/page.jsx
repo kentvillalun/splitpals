@@ -114,7 +114,7 @@ export default function OnboardingPage() {
             </div>
           </motion.div>
         </div>
-        <div className="flex justify-between p-6 text-[14px] ">
+        <div className="flex justify-between py-6 px-10 text-[14px] ">
           {step !== 3 ? (
             <button
               className="bg-[#F97316] min-w-full min-h-13.5 rounded-2xl text-white font-medium text-base shadow-lg gradient-button"
@@ -133,7 +133,7 @@ export default function OnboardingPage() {
                 haptic.light();
               }}
             >
-              Next
+              Get Started
             </Link>
           )}
         </div>
