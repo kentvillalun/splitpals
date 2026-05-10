@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 
 export const PageTransition = ({ children }) => (
   <motion.div
+    className="min-w-full min-h-full"
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}

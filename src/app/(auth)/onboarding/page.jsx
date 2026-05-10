@@ -27,9 +27,9 @@ export default function OnboardingPage() {
           >
             {/* Onboarding 1 */}
             <div
-              className={`flex-col justify-evenly  min-h-full min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
+              className={`flex-col justify-evenly   min-h-full min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
+              <div className="flex flex-col items-center min-w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-1.svg"}
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
             <div
               className={`flex-col justify-evenly min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
+              <div className="flex flex-col items-center min-w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-2.svg"}
@@ -91,7 +91,7 @@ export default function OnboardingPage() {
             <div
               className={`flex-col justify-evenly  min-w-screen p-4 pt-12 pb-0 overflow-x-hidden flex`}
             >
-              <div className="flex flex-col items-center w-full max-w-md p-2 justify-center text-text-primary mb-6">
+              <div className="flex flex-col items-center min-w-full max-w-md p-2 justify-center text-text-primary mb-6">
                 <div className="max-w-108 relative w-full aspect-square">
                   <Image
                     src={"/onboarding/onboarding-3.svg"}
