@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,12 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "SplitPals",
-  description: "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly.",
+  description:
+    "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly.",
 };
 
 export const viewport = {
-  userScalable: false
-}
+  userScalable: false,
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -26,7 +28,10 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-hidden">{children}</body>
+      <body className="min-h-full flex flex-col overflow-hidden">
+        <Toaster />
+        {children}
+      </body>
     </html>
   );
 }
