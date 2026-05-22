@@ -20,7 +20,7 @@ export const DesktopGuard = () => {
           <p className="text-lg font-semibold text-[#1a1a1a]">
             SplitPals is a mobile app
           </p>
-          <p className="text-sm text-[#9CA3AF] mt-1 max-w-xs">
+          <p className="text-sm text-text-secondary mt-1 max-w-xs">
             For the best experience, please open SplitPals on your mobile device.
           </p>
         </div>
