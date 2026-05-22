@@ -9,7 +9,7 @@ import { PageTransition } from "@/app/components/PageTransition";
 import { haptic } from "@/app/lib/haptic";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+
 
 export default function SetupPage() {
   const [step, setStep] = useState("username"); // "password" | "CTA"

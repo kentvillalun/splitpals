@@ -1,6 +1,5 @@
 "use client";
 
-
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageTransition } from "@/app/components/PageTransition";
@@ -10,8 +9,10 @@ import Image from "next/image";
 import { FaGoogle } from "react-icons/fa";
 import { haptic } from "@/app/lib/haptic";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
+  const router = useRouter();
   return (
     <>
       <DesktopGuard />
@@ -36,7 +37,7 @@ export default function SignupPage() {
                 <div className="mt-10 flex flex-col gap-2">
                   <div className="max-w-58 relative aspect-square w-full mx-auto">
                     <Image
-                      src={"/corgis/waggy-corgi.svg"}
+                      src={"/corgis/waggy-corgi.png"}
                       alt="A corgi dog wagging its tails"
                       fill
                       priority
@@ -63,20 +64,23 @@ export default function SignupPage() {
                       const { error } = await supabase.auth.signInWithOAuth({
                         provider: "google",
                         options: {
-                            redirectTo: `${window.location.origin}/auth/callback`
-                        }
-                      })
+                          redirectTo: `${window.location.origin}/auth/callback`,
+                        },
+                      });
 
                       if (error) {
-                        console.log(error)
-                        toast.error("Something went wrong. Please try again.")
+                        console.log(error);
+                        toast.error("Something went wrong. Please try again.");
+                        router.push("/signup");
                       }
                     }}
                   >
                     <FaGoogle />
                     <p className="font-semibold">Connect with Google</p>
                   </button>
-                  <p className="text-text-secondary text-sm text-center">No account needed - just sign in.</p>
+                  <p className="text-text-secondary text-sm text-center">
+                    No account needed - just sign in.
+                  </p>
                 </Card>
               </div>
             </PageTransition>
