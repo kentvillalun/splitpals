@@ -1,15 +1,60 @@
 @import "tailwindcss";
 
+
 @theme {
   --color-primary: #F97316;
   --color-backgroud: #FFF5EE;
   --color-text-primary: #1A1A1A;
-  --color-text-secondary: #9CA3AF;
+  --color-text-secondary: rgba(26,26,26,0.45); /* hints, descriptions*/
+  --color-text-tertiary: rgba(26,26,26,0.32); /* skip, subtle labels*/
+  --color-text-ghost: rgba(26,26,26,0.18); /* upcoming steps */
+  --color-text-placeholder: rgba(26,26,26,0.22); /* completed steps */
+
+  /* --color-text-secondary: #9CA3AF; */
+  
   --color-settled-bg: #EAFAF4;
   --color-settled-text: #27A96B;
+  --font-display: var(--font-baloo);
+  --font-body: var(--font-jakarta);
+  --font-receipt: var(--font-courier);
+
 }
 
 .gradient-button {
   background-image: linear-gradient(to bottom, #FB923C, #EA6C10);
   border-bottom: 1px solid #C2560D;
+}
+
+/* Onboarding steps 1-2 */
+.gradient-onboarding {
+  background:
+    radial-gradient(ellipse 140% 60% at 50% -5%,
+      rgba(251,146,60,0.5) 0%,
+      rgba(253,186,116,0.35) 45%,
+      transparent 68%),
+    #FFF5EE;
+}
+
+/* Step 3 — very slightly more intense */
+.gradient-onboarding-3 {
+  background:
+    radial-gradient(ellipse 145% 62% at 50% -5%,
+      rgba(249,115,22,0.55) 0%,
+      rgba(251,146,60,0.38) 45%,
+      transparent 68%),
+    #FFF5EE;
+}
+
+/* Splash — same logic, bloom from bottom */
+.gradient-splash {
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 105%,
+      rgba(251,146,60,0.5) 0%,
+      rgba(253,186,116,0.35) 45%,
+      transparent 68%),
+    #FFF5EE;
+}
+
+.new-border {
+  border: 0.5px solid rgba(249, 115, 22, 0.12);
 }
