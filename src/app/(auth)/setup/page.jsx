@@ -21,8 +21,8 @@ export default function SetupPage() {
     <>
       <DesktopGuard />
       <Page
-        isGradient={true}
-        className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15"
+        
+        className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15 gradient-splash"
       >
         <main className="flex flex-col items-center min-w-full h-screen justify-between">
           <div className="max-w-40 relative aspect-3/2 w-full flex items-start mx-auto ">

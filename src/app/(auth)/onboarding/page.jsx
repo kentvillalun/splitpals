@@ -4,7 +4,6 @@ import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Baloo_2 } from "next/font/google";
 import { PageTransition } from "@/app/components/PageTransition";
 import Image from "next/image";
 import { Card } from "@/app/components/ui/Card";
@@ -14,6 +13,7 @@ import { createPortal } from "react-dom";
 import { FaGoogle } from "react-icons/fa";
 import { haptic } from "@/app/lib/haptic";
 import { supabase } from "@/app/lib/supabase";
+import { toast } from "sonner";
 
 const demoItems = [
   { id: 1, name: "McSpicy Burger", price: 169 },
@@ -138,17 +138,17 @@ export default function OnboardingPage() {
           <div className="max-w-xl mx-auto w-full flex flex-col gap-3 h-full justify-between">
             <div className="flex flex-col  justify-between gap-3">
               <div className="flex flex-row items-center justify-between">
-                {/* <div className="w-full max-w-20 aspect-3/1 relative">
+                <div className="w-full max-w-25 aspect-3/1 relative">
                 <Image
                   src={"/onboarding/logo.svg"}
                   fill
                   priority
                   alt="Splitpals"
                 />
-              </div> */}
-                <p className={`font-display text-primary text-xl font-bold`}>
+              </div>
+                {/* <p className={`font-display text-primary text-xl font-bold`}>
                   Split<span className="text-text-primary">Pals</span>
-                </p>
+                </p> */}
 
                 {currentStep < 2 && (
                   <button
@@ -808,7 +808,7 @@ export default function OnboardingPage() {
                       {sheetCopy[sheetTrigger]?.sub}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2 w-full items-center">
+                  <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                     <button
                       className=" flex flex-row items-center justify-center w-full hover:cursor-pointer transition-all duration-200 ease-in-out hover:opacity-90 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                       style={{
@@ -823,8 +823,12 @@ export default function OnboardingPage() {
                           provider: "google",
                           options: {
                             redirectTo: `${window.location.origin}/auth/callback`,
+                            
                           }
                         })
+
+                        
+                     
 
                         if (error) {
                           haptic.error()
