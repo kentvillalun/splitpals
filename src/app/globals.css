@@ -1,58 +1,76 @@
 @import "tailwindcss";
 
-
 @theme {
-  --color-primary: #F97316;
-  --color-backgroud: #FFF5EE;
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: rgba(26,26,26,0.45); /* hints, descriptions*/
-  --color-text-tertiary: rgba(26,26,26,0.32); /* skip, subtle labels*/
-  --color-text-ghost: rgba(26,26,26,0.18); /* upcoming steps */
-  --color-text-placeholder: rgba(26,26,26,0.22); /* completed steps */
+  --color-primary: #f97316;
+  --color-backgroud: #fff5ee;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: rgba(26, 26, 26, 0.45); /* hints, descriptions*/
+  --color-text-tertiary: rgba(26, 26, 26, 0.32); /* skip, subtle labels*/
+  --color-text-ghost: rgba(26, 26, 26, 0.18); /* upcoming steps */
+  --color-text-placeholder: rgba(26, 26, 26, 0.22); /* completed steps */
 
   /* --color-text-secondary: #9CA3AF; */
-  
-  --color-settled-bg: #EAFAF4;
-  --color-settled-text: #27A96B;
+
+  --color-settled-bg: #eafaf4;
+  --color-settled-text: #27a96b;
   --font-display: var(--font-baloo);
   --font-body: var(--font-jakarta);
   --font-receipt: var(--font-courier);
 
+  --color-orange: #f97316;
+  --color-orange-mid: #fb923c;
+  --color-orange-lite: #fdba74;
+  --color-orange-pale: #fff5ee;
+  --color-orange-tint: #fff0e5;
+  --color-orange-deep: #ea6c10;
+  --color-orange-border: #c2560d;
+  --color-dark: #1a1a1a;
+
+  --breakpoint-xs: 360px;
+  --breakpoint-mobile: 390px;
 }
 
 .gradient-button {
-  background-image: linear-gradient(to bottom, #FB923C, #EA6C10);
-  border-bottom: 1px solid #C2560D;
+  background-image: linear-gradient(to bottom, #fb923c, #ea6c10);
+  border-bottom: 1px solid #c2560d;
 }
+
+
 
 /* Onboarding steps 1-2 */
 .gradient-onboarding {
   background:
-    radial-gradient(ellipse 140% 60% at 50% -5%,
-      rgba(251,146,60,0.5) 0%,
-      rgba(253,186,116,0.35) 45%,
-      transparent 68%),
-    #FFF5EE;
+    radial-gradient(
+      ellipse 140% 60% at 50% -5%,
+      rgba(251, 146, 60, 0.5) 0%,
+      rgba(253, 186, 116, 0.35) 45%,
+      transparent 68%
+    ),
+    #fff5ee;
 }
 
 /* Step 3 — very slightly more intense */
 .gradient-onboarding-3 {
   background:
-    radial-gradient(ellipse 145% 62% at 50% -5%,
-      rgba(249,115,22,0.55) 0%,
-      rgba(251,146,60,0.38) 45%,
-      transparent 68%),
-    #FFF5EE;
+    radial-gradient(
+      ellipse 145% 62% at 50% -5%,
+      rgba(249, 115, 22, 0.55) 0%,
+      rgba(251, 146, 60, 0.38) 45%,
+      transparent 68%
+    ),
+    #fff5ee;
 }
 
 /* Splash — same logic, bloom from bottom */
 .gradient-splash {
   background:
-    radial-gradient(ellipse 140% 60% at 50% 105%,
-      rgba(251,146,60,0.5) 0%,
-      rgba(253,186,116,0.35) 45%,
-      transparent 68%),
-    #FFF5EE;
+    radial-gradient(
+      ellipse 140% 60% at 50% 105%,
+      rgba(251, 146, 60, 0.5) 0%,
+      rgba(253, 186, 116, 0.35) 45%,
+      transparent 68%
+    ),
+    #fff5ee;
 }
 
 .new-border {
