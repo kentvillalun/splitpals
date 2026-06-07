@@ -7,7 +7,7 @@ export const PageTransition = ({ children, className = "" }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}
-    transition={{ duration: 1 }}
+    transition={{ duration: 0.4 }}
   >
     {children}
   </motion.div>

@@ -9,23 +9,64 @@ import { PageTransition } from "@/app/components/PageTransition";
 import { haptic } from "@/app/lib/haptic";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
-
+import { supabase } from "@/app/lib/supabase";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function SetupPage() {
   const [step, setStep] = useState("username"); // "password" | "CTA"
   const [isShowPassword, setIsShowPassword] = useState(false);
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [user, setUser] = useState(null)
 
-  
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+     
+      const fullName = session?.user?.user_metadata?.full_name ?? "";
+
+      setUser(session?.user)
+      setName(fullName.split(' ')[0]);
+    };
+    getUser()
+  }, []);
+
+  const handleContinue = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name: name,
+        has_completed_onboarding: true
+      })
+      .eq('id', user.id)
+
+      console.log(error)
+    if (error) {
+      haptic.error()
+      toast.error('Something went wrong. Please try again.')
+      return
+    }
+
+    haptic.success()
+    router.push('/ready')
+  }
+
+
   return (
     <>
       <DesktopGuard />
-      <Page
-        
-        className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15 gradient-splash"
-      >
+      <Page className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15 gradient-splash font-body!">
         <main className="flex flex-col items-center min-w-full h-screen justify-between">
-          <div className="max-w-40 relative aspect-3/2 w-full flex items-start mx-auto ">
+          <motion.div
+          key={'logo'}
+            className="max-w-35 relative aspect-3/2 w-full flex items-start mx-auto "
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut'}}
+          >
             <Image
               priority
               src={"/onboarding/logo.svg"}
@@ -33,11 +74,11 @@ export default function SetupPage() {
               alt="SplitPals"
               loading="eager"
             />
-          </div>
+          </motion.div>
 
           <div className="flex-1 min-w-full flex flex-col items-center ">
-            {step === "username" ? (
-              <>
+           
+              
                 <PageTransition key={"username"}>
                   <div className="max-w-85 relative aspect-5/3 w-full mt-15 mx-auto">
                     <Image
@@ -56,7 +97,7 @@ export default function SetupPage() {
                         priority
                         loading="eager"
                       />
-                      <p className="absolute text-sm top-22 right-7 text-text-primary">
+                      <p className="absolute text-sm top-22 right-7 text-text-primary font-body">
                         What should I call you?
                       </p>
                     </div>
@@ -69,16 +110,18 @@ export default function SetupPage() {
                         </label>
                         <input
                           type="text"
-                          className="outline-none px-3 py-2 border rounded-lg placeholder:text-text-secondary text-base border-text-secondary focus:border-primary transition-colors duration-150 ease-in-out"
-                          placeholder="e.g. Coco"
+                          className="outline-none px-3 py-2 border rounded-lg placeholder:text-text-secondary text-base border-gray-200 focus:border-primary transition-all duration-200 ease-in-out"
+                          placeholder="e.g. Corgi"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
                         />
                       </div>
                       <div className="flex items-end w-full justify-end">
                         <button
-                          className="gradient-button px-6 py-2 rounded-lg text-white font-medium"
+                          className="gradient-button px-6 py-2 rounded-lg text-white font-medium text-sm"
                           onClick={() => {
-                            setStep("password");
                             haptic.medium();
+                            handleContinue()
                           }}
                         >
                           Continue
@@ -87,53 +130,9 @@ export default function SetupPage() {
                     </div>
                   </Card>
                 </PageTransition>
-              </>
-            ) : step === "password" ? (
-              <>
-                <PageTransition key={"password"}>
-                  <div className="flex items-center justify-center min-w-full mt-15">
-                    <h3 className="text-text-primary font-medium text-center max-w-62.5 text-lg">
-                      Almost there, <span className="font-semibold">Kent</span>!
-                      Set your password.
-                    </h3>
-                  </div>
-                  <Card className="min-w-75 mt-10 mx-7 md:max-w-120 md:mx-auto">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="font-medium text-base text-text-primary">
-                          Password
-                        </label>
-                        <div className="outline-none px-3 py-2 border rounded-lg placeholder:text-text-secondary text-base border-text-secondary focus-within:border-primary transition-colors duration-150 ease-in-out flex flex-row items-center justify-between text-text-primary">
-                          <input
-                            type={isShowPassword ? "text" : "password"}
-                            className="outline-none"
-                            placeholder="Input password"
-                          />
-                          <button
-                            className="text-text-secondary font-medium"
-                            onClick={() => setIsShowPassword((prev) => !prev)}
-                          >
-                            Show
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-end w-full justify-end">
-                        <button
-                          className="gradient-button px-6 py-2 rounded-lg text-white font-medium"
-                          onClick={() => {
-                            setStep("CTA");
-                            haptic.medium();
-                          }}
-                        >
-                          Continue
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
-                </PageTransition>
-              </>
-            ) : (
-              step === "CTA" && (
+            
+        
+              {/* step === "CTA" && (
                 <>
                   <PageTransition key={"cta"}>
                     <div className="flex flex-col items-center justify-evenly min-h-full">
@@ -187,7 +186,7 @@ export default function SetupPage() {
                   </PageTransition>
                 </>
               )
-            )}
+            )} */}
           </div>
         </main>
       </Page>
