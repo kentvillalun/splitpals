@@ -4,8 +4,8 @@ import Image from "next/image";
 export const DesktopGuard = () => {
   return (
     <Page
-      className="hidden lg:flex h-svh w-full items-center justify-center"
-      isGradient={true}
+      className="hidden lg:flex h-svh w-full items-center justify-center gradient-splash"
+      
     >
       <div className="text-center flex flex-col items-center gap-4">
         <div className="max-w-50 relative w-full aspect-square">
