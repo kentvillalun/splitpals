@@ -1,9 +1,10 @@
 
 
-export default function HistoryPage() {
+export default function HistoryDetailPage() {
 
     return (
         <>
+        This is the history detail page
         </>
     )
 }

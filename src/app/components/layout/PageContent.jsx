@@ -13,7 +13,7 @@ export const PageContent = ({
         ${twMerge("flex flex-col gap-6 px-3 py-6", className)}
         overflow-y-auto
         ${withBottomNav ? "pb-[calc(12rem+env(safe-area-inset-bottom))]" : "pb-[calc(13rem+env(safe-area-inset-bottom))]"}
-        md:pl-80 md:h-screen
+        md:h-screen
       `}
     >
       {children}

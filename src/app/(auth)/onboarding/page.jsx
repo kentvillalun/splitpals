@@ -778,7 +778,7 @@ export default function OnboardingPage() {
                   animate={{ opacity: 1 }}
                   exit={{
                     opacity: 0,
-                    transitio: { duration: 0.15, ease: "easeIn" },
+                    transition: { duration: 0.15, ease: "easeIn" },
                   }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="fixed inset-0 z-40 bg-black/40 font-body"

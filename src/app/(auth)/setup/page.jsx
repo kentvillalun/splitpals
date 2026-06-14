@@ -35,6 +35,7 @@ export default function SetupPage() {
   }, []);
 
   const handleContinue = async () => {
+   
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -43,7 +44,7 @@ export default function SetupPage() {
       })
       .eq("id", user.id);
 
-    console.log(error);
+   
     if (error) {
       haptic.error();
       toast.error("Something went wrong. Please try again.");

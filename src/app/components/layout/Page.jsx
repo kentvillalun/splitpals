@@ -5,10 +5,10 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-export const Page = ({ className = "", children, isGradient = false }) => {
+export const Page = ({ className = "", children }) => {
   return (
     <main
-      className={`relative min-h-svh flex ${isGradient ? "bg-linear-to-b from-[#FFFFFF] from-40% to-[#FCB17D]" : ""} ${jakarta.className} ${className}`}
+      className={`relative min-h-svh flex  ${jakarta.className} ${className}`}
     >
       {children}
     </main>
