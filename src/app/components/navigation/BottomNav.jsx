@@ -24,7 +24,7 @@ export const BottomNav = () => {
   const inSettings = pathName.startsWith("/settings");
 
   return (
-    <div className="lg:hidden flex flex-row gap-4 items-center mobile:min-w-screen fixed bottom-6 h-auto px-4 font-body font-medium mx-auto justify-center">
+    <div className="lg:hidden flex flex-row gap-4 items-center min-w-screen fixed bottom-6 h-auto px-4 font-body font-medium mx-auto justify-center">
       <div className="grid flex-1 grid-cols-3 rounded-[18px] bg-white h-auto items-center px-1.5 py-2.5 new-border text-[10px] gap-1 md:max-w-lg">
         <button
           className={`flex flex-col items-center rounded-2xl py-1 transition-colors duration-200 ${inDashboard ? "bg-primary/10" : ""}`}
