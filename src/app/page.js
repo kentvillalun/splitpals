@@ -10,9 +10,24 @@ function minimumDelay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isAndroid() {
+  if (typeof navigator === "undefined") return false;
+  return /android/i.test(navigator.userAgent);
+}
+
 export default function RootPage() {
   const router = useRouter();
   const [isExiting, setIsExiting] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [showSplashUI, setShowSplashUI] = useState(true);
+
+  useEffect(() => {
+    // Android's PWA install flow already shows its own native splash
+    // screen (defined via manifest.json) — layering ours on top is
+    // redundant and can look like a double-loading glitch. iOS has no
+    // equivalent, so we keep our custom splash there.
+    setShowSplashUI(!isAndroid());
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -38,36 +53,84 @@ export default function RootPage() {
         return { destination: "/dashboard" };
       };
 
-      const [{ destination }] = await Promise.all([
+      const onAndroid = isAndroid();
+
+      // Android skips the minimum delay + custom UI entirely — the
+      // platform's own splash already covered that loading time.
+      const [{ destination: dest }] = await Promise.all([
         checkAuth(),
-        minimumDelay(2000),
+        onAndroid ? Promise.resolve() : minimumDelay(2000),
       ]);
 
-      // trigger fade-out, then navigate once it's finished
-      setIsExiting(true);
-      await minimumDelay(350);
-      router.replace(destination);
+      if (onAndroid) {
+        router.replace(dest);
+        return;
+      }
+
+      if (dest === "/onboarding") {
+        setIsFlipping(true);
+        await minimumDelay(550); // matches the gradient flip duration below
+        router.replace(dest);
+      } else {
+        setIsExiting(true);
+        await minimumDelay(350);
+        router.replace(dest);
+      }
     }
 
     init();
   }, [router]);
+
+  if (!showSplashUI) {
+    // Android — render nothing, navigation happens instantly once
+    // checkAuth resolves. The platform's native splash covers this gap.
+    return null;
+  }
 
   return (
     <AnimatePresence>
       {!isExiting && (
         <motion.div
           key="splash"
-          className="gradient-splash w-full h-screen flex items-center justify-center fixed inset-0 z-50"
+          className="w-full h-screen flex items-center justify-center fixed inset-0 z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35, ease: "easeInOut" }}
+          style={{
+            background:
+              "radial-gradient(ellipse 140% 60% at 50% 105%, rgba(251,146,60,0.5) 0%, rgba(253,186,116,0.35) 45%, transparent 68%), #FFF5EE",
+          }}
         >
+          {/* Animated gradient layer — flips bloom position from bottom to top */}
           <motion.div
-            className="relative w-40 aspect-[3/1]"
+            className="absolute inset-0 -z-10"
+            initial={{ opacity: 0 }}
+            animate={
+              isFlipping
+                ? {
+                    opacity: 1,
+                    background:
+                      "radial-gradient(ellipse 140% 60% at 50% -5%, rgba(251,146,60,0.5) 0%, rgba(253,186,116,0.35) 45%, transparent 68%), #FFF5EE",
+                  }
+                : { opacity: 0 }
+            }
+            transition={{ duration: 0.55, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            className="relative w-40 aspect-3/1 z-10"
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+            animate={
+              isFlipping
+                ? { opacity: 0, y: -10 }
+                : { opacity: 1, y: 0 }
+            }
+            transition={
+              isFlipping
+                ? { duration: 0.3, ease: "easeIn" }
+                : { duration: 0.4, ease: "easeOut", delay: 0.1 }
+            }
           >
             <Image
               src="/onboarding/logo.svg"

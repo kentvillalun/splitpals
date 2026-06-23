@@ -1,17 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { Card } from "@/app/components/ui/Card";
 import { formatDate } from "@/app/lib/formatDate";
 import { useFetch } from "@/app/lib/hooks/useFetch";
+import { supabase } from "@/app/lib/supabase";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 export default function DashboardPage() {
+  const [name, setName] = useState("");
+
   const {
     data: bills,
     isLoading,
@@ -24,6 +28,49 @@ export default function DashboardPage() {
     limit: 5,
     select: `id, name, created_at, persons (id, name, is_paid, items( id, name, price))`,
   });
+
+  useEffect(() => {
+    const getName = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      // Use first word only for the greeting — keeps it casual/friendly
+      const firstName = profile?.name?.split(" ")[0] ?? "";
+      setName(firstName);
+    };
+
+    getName();
+  }, []);
+
+  // Derive bill stats for the dynamic message
+  const billsWithMeta = bills.map((b) => {
+    const totalAmount =
+      b.persons?.reduce(
+        (sum, person) =>
+          sum + (person.items?.reduce((s, item) => s + item.price, 0) ?? 0),
+        0,
+      ) ?? 0;
+    const isSettled = b.persons?.every((p) => p.is_paid) ?? false;
+    return { ...b, totalAmount, isSettled };
+  });
+
+  const unsettledCount = billsWithMeta.filter((b) => !b.isSettled).length;
+
+  function getGreetingMessage() {
+    if (isLoading) return "Loading your bills...";
+    if (bills.length === 0) return "Create your first bill to get started.";
+    if (unsettledCount === 0) return "All your bills are settled. Nice!";
+    if (unsettledCount === 1) return "You have 1 unsettled bill.";
+    return `You have ${unsettledCount} unsettled bills.`;
+  }
 
   return (
     <>
@@ -51,11 +98,11 @@ export default function DashboardPage() {
                 {/* bubble */}
                 <div className="flex flex-col items-start bg-white new-border absolute p-4 z-40 left-32 right-4 top-3.5 rounded-t-3xl rounded-br-3xl rounded-bl-sm">
                   <p className="font-bold font-body text-sm">
-                    Hey <span className="text-primary">Kent</span>! Ready to
-                    split?
+                    Hey <span className="text-primary">{name || "there"}</span>!
+                    Ready to split?
                   </p>
                   <p className="text-text-secondary text-sm">
-                    Create your first bill to get started.
+                    {getGreetingMessage()}
                   </p>
                 </div>
               </div>
@@ -143,21 +190,8 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  bills.map((b) => {
-                    const totalAmount =
-                      b.persons?.reduce(
-                        (sum, person) =>
-                          sum +
-                          (person.items?.reduce(
-                            (s, item) => s + item.price,
-                            0,
-                          ) ?? 0),
-                        0,
-                      ) ?? 0;
-
+                  billsWithMeta.map((b) => {
                     const peopleCount = b.persons?.length ?? 0;
-                    const isSettled =
-                      b.persons?.every((p) => p.is_paid) ?? false;
 
                     return (
                       <Card key={b.id} className="p-0!">
@@ -172,7 +206,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <p className="font-bold text-base">
-                              ₱{totalAmount.toFixed(2)}
+                              ₱{b.totalAmount.toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -182,20 +216,18 @@ export default function DashboardPage() {
                           </p>
                           <span
                             className={`text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
-                              isSettled
+                              b.isSettled
                                 ? "bg-[rgba(34,197,94,0.12)] text-[#16a34a]"
                                 : "bg-orange-tint text-orange"
                             }`}
                           >
-                            {isSettled ? "Settled" : "Unsettled"}
+                            {b.isSettled ? "Settled" : "Unsettled"}
                           </span>
                         </div>
                       </Card>
                     );
                   })
                 )}
-
-                {}
               </div>
             </div>
           </div>

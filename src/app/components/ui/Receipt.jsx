@@ -154,7 +154,7 @@ export function Receipt({
                     className="flex justify-between items-baseline gap-3"
                   >
                     <p className="truncate">{item.name}</p>
-                    <p className="font-bold flex-shrink-0">
+                    <p className="font-bold shrink-0">
                       <span className="font-body">₱</span>
                       {item.price.toFixed(2)}
                     </p>
@@ -228,7 +228,7 @@ export function Receipt({
             ].map((h, i) => (
               <div
                 key={i}
-                className="w-[2px] bg-black/15 rounded-[1px]"
+                className="w-0.5 bg-black/15 rounded-[1px]"
                 style={{ height: `${h}px` }}
               />
             ))}
