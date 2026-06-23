@@ -47,9 +47,9 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${baloo.variable} ${jakarta.variable} ${courier.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${baloo.variable} ${jakarta.variable} ${courier.variable}`}
     >
-      <body className="min-h-full flex flex-col overflow-auto">
+      <body className="flex flex-col overflow-auto antialiased">
         <Toaster position="top"/>
         {children}
       </body>
