@@ -18,8 +18,8 @@
   "theme_color": "#FFF5EE",
   "background_color": "#FFF5EE",
   "display": "standalone",
-  "start_url": "/",
+  "start_url": "/launch",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/launch",
   "description": "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly."
 }

@@ -93,9 +93,9 @@ export default function HistoryDetailPage() {
       <DesktopGuard />
       <Page className="bg-backgroud">
         <PageContent className="px-0">
-          <div className="flex flex-col w-full gap-5">
+          <div className="flex flex-col w-full gap-5 relative">
             {/* Header */}
-            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl">
+            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50">
               <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
@@ -128,7 +128,7 @@ export default function HistoryDetailPage() {
               </div>
             </div>
 
-            <div className="max-w-xl mx-auto w-full px-4">
+            <div className="max-w-xl mx-auto w-full px-4 absolute top-25">
               {isLoading ? (
                 <div className="bg-white rounded-3xl p-5 flex flex-col gap-3">
                   <Skeleton height={20} width={120} className="mx-auto" />
