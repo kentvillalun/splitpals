@@ -9,7 +9,7 @@ import { useFetch } from "@/app/lib/hooks/useFetch";
 import { formatDate } from "@/app/lib/formatDate";
 import { supabase } from "@/app/lib/supabase";
 import { haptic } from "@/app/lib/haptic";
-import { Receipt } from "@/app/components/Receipt";
+import { Receipt } from "@/app/components/ui/Receipt";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Image from "next/image";
@@ -106,7 +106,7 @@ function ReceiptPageContent() {
                 </p>
                 <button
                   onClick={handleDone}
-                  className="px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-semibold hover:bg-white/25 transition-colors duration-150 flex-shrink-0"
+                  className="px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-semibold hover:bg-white/25 transition-colors duration-150 shrink-0"
                 >
                   Done
                 </button>
@@ -114,7 +114,7 @@ function ReceiptPageContent() {
             </div>
 
             {/* Spacer so content doesn't sit under the fixed header */}
-            <div className="h-[88px]" />
+            <div className="h-22" />
 
             <div className="max-w-xl mx-auto w-full px-4 -mt-5">
               {isLoading ? (
