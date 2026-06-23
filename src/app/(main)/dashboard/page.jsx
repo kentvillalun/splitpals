@@ -194,7 +194,7 @@ export default function DashboardPage() {
                     const peopleCount = b.persons?.length ?? 0;
 
                     return (
-                      <Card key={b.id} className="p-0!" handleOnClick={() => router.push(`/histoty/${b.id}`)}>
+                      <Card key={b.id} className="p-0!" handleOnClick={() => router.push(`/history/${b.id}`)}>
                         <div className="flex flex-row justify-between border-b border-gray-100 p-3">
                           <div className="flex flex-col">
                             <p className="text-base font-semibold text-text-primary">

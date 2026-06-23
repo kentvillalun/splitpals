@@ -35,7 +35,9 @@
   border-bottom: 1px solid #c2560d;
 }
 
-
+.gradient-button-red {
+  background-image: linear-gradient(to bottom, #ef4444, #dc2626);
+}
 
 /* Onboarding steps 1-2 */
 .gradient-onboarding {
