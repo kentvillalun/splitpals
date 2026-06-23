@@ -40,7 +40,8 @@ export const metadata = {
 
 export const viewport = {
   userScalable: false,
-};
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+}
 
 export default function RootLayout({ children }) {
   return (
@@ -48,7 +49,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${baloo.variable} ${jakarta.variable} ${courier.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-hidden">
+      <body className="min-h-full flex flex-col overflow-auto">
         <Toaster position="top"/>
         {children}
       </body>
