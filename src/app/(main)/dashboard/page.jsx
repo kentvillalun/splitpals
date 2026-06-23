@@ -127,7 +127,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-base font-semibold">Recent bills</p>
                   {bills.length !== 0 && (
-                    <button className="text-sm font-semibold text-primary">
+                    <button className="text-sm font-semibold text-primary" onClick={() => router.push('/history')}>
                       See all
                     </button>
                   )}

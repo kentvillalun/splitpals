@@ -230,7 +230,7 @@ export default function NewBillPage() {
     <>
       <DesktopGuard />
       <Page className="bg-backgroud">
-        <PageContent className="px-0">
+        <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
             {/* Header — fixed at top */}
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">

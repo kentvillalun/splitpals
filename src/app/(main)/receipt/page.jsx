@@ -96,7 +96,7 @@ function ReceiptPageContent() {
     <>
       <DesktopGuard />
       <Page className="bg-backgroud">
-        <PageContent className="px-0">
+        <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
             {/* Header — fixed at top */}
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">
@@ -116,7 +116,7 @@ function ReceiptPageContent() {
             {/* Spacer so content doesn't sit under the fixed header */}
             <div className="h-22" />
 
-            <div className="max-w-xl mx-auto w-full px-4 -mt-5">
+            <div className="max-w-xl mx-auto w-full px-4 -mt-4">
               {isLoading ? (
                 <div className="bg-white rounded-3xl p-5 flex flex-col gap-3">
                   <Skeleton height={20} width={120} className="mx-auto" />

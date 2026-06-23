@@ -92,7 +92,7 @@ export default function HistoryDetailPage() {
     <>
       <DesktopGuard />
       <Page className="bg-backgroud">
-        <PageContent className="px-0">
+        <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5 relative">
             {/* Header */}
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50">
@@ -128,7 +128,7 @@ export default function HistoryDetailPage() {
               </div>
             </div>
 
-            <div className="max-w-xl mx-auto w-full px-4 absolute top-25">
+            <div className="max-w-xl mx-auto w-full px-4 pb-4 absolute top-24">
               {isLoading ? (
                 <div className="bg-white rounded-3xl p-5 flex flex-col gap-3">
                   <Skeleton height={20} width={120} className="mx-auto" />
@@ -228,7 +228,7 @@ export default function HistoryDetailPage() {
                     <button
                       onClick={handleConfirmDelete}
                       disabled={isDeleting}
-                      className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body disabled:opacity-60 bg-red-500"
+                      className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body disabled:opacity-60 gradient-button-red"
                     >
                       {isDeleting && (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
