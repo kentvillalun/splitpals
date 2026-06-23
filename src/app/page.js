@@ -19,6 +19,7 @@ export default function RootPage() {
   const router = useRouter();
   const [isExiting, setIsExiting] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const [gradientRising, setGradientRising] = useState(false);
   const [showSplashUI, setShowSplashUI] = useState(true);
 
   useEffect(() => {
@@ -68,8 +69,12 @@ export default function RootPage() {
       }
 
       if (dest === "/onboarding") {
+        // Phase 1: logo fades out first, on its own
         setIsFlipping(true);
-        await minimumDelay(550); // matches the gradient flip duration below
+        await minimumDelay(350);
+        // Phase 2: gradient visibly rises from bottom to top
+        setGradientRising(true);
+        await minimumDelay(650);
         router.replace(dest);
       } else {
         setIsExiting(true);
@@ -107,7 +112,7 @@ export default function RootPage() {
             className="absolute inset-0 -z-10"
             initial={{ opacity: 0 }}
             animate={
-              isFlipping
+              gradientRising
                 ? {
                     opacity: 1,
                     background:
@@ -115,11 +120,11 @@ export default function RootPage() {
                   }
                 : { opacity: 0 }
             }
-            transition={{ duration: 0.55, ease: "easeInOut" }}
+            transition={{ duration: 0.65, ease: [0.65, 0, 0.35, 1] }}
           />
 
           <motion.div
-            className="relative w-40 aspect-3/1 z-10"
+            className="relative w-40 aspect-[3/1] z-10"
             initial={{ opacity: 0, y: 10 }}
             animate={
               isFlipping
