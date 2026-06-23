@@ -10,13 +10,12 @@ export function useFetch({
   orderBy = null,
   limit = null,
   requiredAuth = true,
-  refetchCount
 }) {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState(null);
-
+  const [refetchCount, setRefetchCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,7 +56,7 @@ export function useFetch({
       const { data: result, error } = await query;
 
       if (error) {
-        setIsError(true)
+        setIsError(true);
         setError(error.message);
       } else {
         setData(result);
@@ -65,8 +64,10 @@ export function useFetch({
       setIsLoading(false);
     };
 
-    fetchData()
+    fetchData();
   }, [table, JSON.stringify(filters), limit, refetchCount]);
 
-  return { data, isLoading, isError, error}
+  const handleRefetch = () => setRefetchCount((prev) => prev + 1);
+
+  return { data, isLoading, isError, error, handleRefetch, setData };
 }

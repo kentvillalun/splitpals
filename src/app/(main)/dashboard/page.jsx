@@ -1,14 +1,30 @@
+"use client";
+
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
-import { PlusCircleIcon } from "@heroicons/react/16/solid";
+import { Card } from "@/app/components/ui/Card";
+import { formatDate } from "@/app/lib/formatDate";
+import { useFetch } from "@/app/lib/hooks/useFetch";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 export default function DashboardPage() {
+  const {
+    data: bills,
+    isLoading,
+    isError,
+    error,
+    handleRefetch,
+  } = useFetch({
+    table: "bills",
+    orderBy: { column: "created_at", ascending: false },
+    limit: 5,
+    select: `id, name, created_at, persons (id, name, is_paid, items( id, name, price))`,
+  });
 
-
-  
   return (
     <>
       <DesktopGuard />
@@ -45,7 +61,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-col px-4">
+            <div className="flex flex-col px-4 gap-4">
               <div className="flex flex-row">
                 <div className="flex flex-row bg-white rounded-2xl w-full h-auto p-4 gap-4">
                   <div className="rounded-full gradient-button p-3 flex items-center justify-center">
@@ -53,9 +69,133 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex flex-col ">
                     <p className="text-base font-semibold">New Bill</p>
-                    <p className="text-text-secondary text-sm">Split with your friends</p>
+                    <p className="text-text-secondary text-sm">
+                      Split with your friends
+                    </p>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-base font-semibold">Recent bills</p>
+                  {bills.length !== 0 && (
+                    <button className="text-sm font-semibold text-primary">
+                      See all
+                    </button>
+                  )}
+                </div>
+                {isLoading ? (
+                  <Card className="p-0!">
+                    <div className="flex flex-row justify-between border-b border-gray-100 p-3">
+                      <div className="flex flex-col">
+                        <Skeleton width={140} />
+                        <Skeleton width={120} />
+                      </div>
+                      <div>
+                        <Skeleton width={80} />
+                      </div>
+                    </div>
+                    <div className="flex flex-row justify-between p-3">
+                      <Skeleton width={50} />
+                      <Skeleton width={50} />
+                    </div>
+                  </Card>
+                ) : isError ? (
+                  <div className="flex flex-col items-center text-center py-10 gap-2">
+                    <div className="w-25 h-25 relative">
+                      <Image
+                        src="/corgis/sad-corgi.svg"
+                        fill
+                        alt="Confused corgi"
+                        property=""
+                      />
+                    </div>
+                    <p className="font-bold text-text-primary text-base">
+                      Something went wrong
+                    </p>
+                    <p className="text-text-secondary text-sm max-w-55">
+                      We couldn't load your bills. Check your connection and try
+                      again.
+                    </p>
+                    <button
+                      className="text-sm font-semibold text-primary mt-1"
+                      onClick={() => handleRefetch()}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : bills.length === 0 ? (
+                  <div className="flex flex-col items-center text-center py-10 gap-2">
+                    <div className="w-24 h-24 relative">
+                      <Image
+                        src="/corgis/sad-corgi.svg"
+                        fill
+                        alt="Curious corgi"
+                      />
+                    </div>
+                    <p className="font-bold text-text-primary text-base">
+                      No bills yet
+                    </p>
+                    <p className="text-text-secondary text-sm max-w-55">
+                      Start splitting with friends — tap "New Bill" above to
+                      create your first one.
+                    </p>
+                  </div>
+                ) : (
+                  bills.map((b) => {
+                    const totalAmount =
+                      b.persons?.reduce(
+                        (sum, person) =>
+                          sum +
+                          (person.items?.reduce(
+                            (s, item) => s + item.price,
+                            0,
+                          ) ?? 0),
+                        0,
+                      ) ?? 0;
+
+                    const peopleCount = b.persons?.length ?? 0;
+                    const isSettled =
+                      b.persons?.every((p) => p.is_paid) ?? false;
+
+                    return (
+                      <Card key={b.id} className="p-0!">
+                        <div className="flex flex-row justify-between border-b border-gray-100 p-3">
+                          <div className="flex flex-col">
+                            <p className="text-base font-semibold text-text-primary">
+                              {b.name}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              {formatDate(b.created_at)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-base">
+                              ₱{totalAmount.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-row justify-between p-3">
+                          <p className="text-xs text-text-secondary">
+                            {peopleCount} people
+                          </p>
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
+                              isSettled
+                                ? "bg-[rgba(34,197,94,0.12)] text-[#16a34a]"
+                                : "bg-orange-tint text-orange"
+                            }`}
+                          >
+                            {isSettled ? "Settled" : "Unsettled"}
+                          </span>
+                        </div>
+                      </Card>
+                    );
+                  })
+                )}
+
+                {}
               </div>
             </div>
           </div>
