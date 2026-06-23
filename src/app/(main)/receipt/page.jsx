@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
@@ -9,12 +9,20 @@ import { useFetch } from "@/app/lib/hooks/useFetch";
 import { formatDate } from "@/app/lib/formatDate";
 import { supabase } from "@/app/lib/supabase";
 import { haptic } from "@/app/lib/haptic";
-import { Receipt } from "@/app/components/ui/Receipt";
+import { Receipt } from "@/app/components/Receipt";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Image from "next/image";
 
 export default function ReceiptPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReceiptPageContent />
+    </Suspense>
+  );
+}
+
+function ReceiptPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const billId = searchParams.get("id");
@@ -64,7 +72,7 @@ export default function ReceiptPage() {
     return (
       <>
         <DesktopGuard />
-        <Page className="bg-backgroud lg:hidden">
+        <Page className="bg-backgroud">
           <PageContent className="px-4 flex flex-col items-center text-center py-20 gap-2">
             <p className="font-bold text-text-primary text-base">
               No bill specified
@@ -87,8 +95,8 @@ export default function ReceiptPage() {
   return (
     <>
       <DesktopGuard />
-      <Page className="bg-backgroud lg:hidden">
-        <PageContent className="px-0 " withBottomNav={false}>
+      <Page className="bg-backgroud">
+        <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
             {/* Header — fixed at top */}
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">
@@ -98,7 +106,7 @@ export default function ReceiptPage() {
                 </p>
                 <button
                   onClick={handleDone}
-                  className="px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-semibold hover:bg-white/25 transition-colors duration-150 shrink-0"
+                  className="px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-semibold hover:bg-white/25 transition-colors duration-150 flex-shrink-0"
                 >
                   Done
                 </button>
@@ -106,7 +114,7 @@ export default function ReceiptPage() {
             </div>
 
             {/* Spacer so content doesn't sit under the fixed header */}
-            <div className="h-22" />
+            <div className="h-[88px]" />
 
             <div className="max-w-xl mx-auto w-full px-4 -mt-5">
               {isLoading ? (
