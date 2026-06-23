@@ -17,10 +17,10 @@ import {
   ChatBubbleLeftRightIcon,
   DocumentTextIcon,
   ShieldCheckIcon,
+  ArrowLeftStartOnRectangleIcon,
   ArrowLeftIcon,
   ChevronRightIcon,
   TrashIcon,
-  ArrowLeftStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import Skeleton from "react-loading-skeleton";
@@ -30,7 +30,7 @@ function Toggle({ enabled, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className={`w-11 h-6 rounded-full transition-colors duration-200 relative shrink-0 ${
+      className={`w-11 h-6 rounded-full transition-colors duration-200 relative flex-shrink-0 ${
         enabled ? "bg-orange" : "bg-black/10"
       }`}
     >
@@ -160,7 +160,7 @@ export default function SettingsPage() {
                   <ArrowLeftIcon className="w-4 stroke-white" />
                 </button>
                 <p className="text-base font-semibold text-white">Settings</p>
-                <div className="w-8 h-8" /> {/* spacer to center the title */}
+                <div className="w-8 h-8" />
               </div>
             </div>
 
@@ -206,10 +206,7 @@ export default function SettingsPage() {
                         <p className="font-semibold text-text-primary truncate">
                           {name || "Your name"}
                         </p>
-                        <button
-                          onClick={startEditingName}
-                          className="shrink-0"
-                        >
+                        <button onClick={startEditingName} className="shrink-0">
                           <PencilIcon className="w-3.5 text-text-secondary/60" />
                         </button>
                       </div>
@@ -227,11 +224,14 @@ export default function SettingsPage() {
                     disabled={signingOut}
                   >
                     <div className="flex items-center gap-3">
-                      <ArrowLeftStartOnRectangleIcon  className="w-5 text-text-secondary" />
+                      <ArrowLeftStartOnRectangleIcon className="w-5 text-text-secondary" />
                       <p className="text-sm font-medium text-text-primary">
-                        {signingOut ? "Signing out..." : "Sign out"}
+                        Sign out
                       </p>
                     </div>
+                    {signingOut && (
+                      <div className="w-4 h-4 border-2 border-text-secondary/30 border-t-text-secondary rounded-full animate-spin" />
+                    )}
                   </button>
                 </Card>
               </div>
@@ -249,10 +249,7 @@ export default function SettingsPage() {
                         Push notifications
                       </p>
                     </div>
-                    <Toggle
-                      enabled={notifEnabled}
-                      onToggle={toggleNotifications}
-                    />
+                    <Toggle enabled={notifEnabled} onToggle={toggleNotifications} />
                   </div>
 
                   <div className={menuItemClass}>
@@ -262,10 +259,7 @@ export default function SettingsPage() {
                         Dark mode
                       </p>
                     </div>
-                    <Toggle
-                      enabled={darkModeEnabled}
-                      onToggle={toggleDarkMode}
-                    />
+                    <Toggle enabled={darkModeEnabled} onToggle={toggleDarkMode} />
                   </div>
                 </Card>
               </div>
