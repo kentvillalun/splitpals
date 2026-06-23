@@ -76,3 +76,8 @@
 .new-border {
   border: 0.5px solid rgba(249, 115, 22, 0.12);
 }
+
+html, body {
+  background-color: #fff5ee;
+  overscroll-behavior: none;
+}
