@@ -97,34 +97,34 @@ export default function RootPage() {
       {!isExiting && (
         <motion.div
           key="splash"
-          className="w-full h-screen flex items-center justify-center fixed inset-0 z-50"
+          className="w-full h-screen overflow-hidden flex items-center justify-center fixed inset-0 z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35, ease: "easeInOut" }}
-          style={{
-            background:
-              "radial-gradient(ellipse 140% 60% at 50% 105%, rgba(251,146,60,0.5) 0%, rgba(253,186,116,0.35) 45%, transparent 68%), #FFF5EE",
-          }}
+          style={{ backgroundColor: "#FFF5EE" }}
         >
-          {/* Animated gradient layer — flips bloom position from bottom to top */}
+          {/* Gradient mass — sized to 3x viewport height (not 100%) so the box
+              still overlaps the viewport after it travels. Size/position use
+              vh/vw (viewport-relative) instead of % (box-relative): with a
+              100vh box, translateY(-110%) walks the ENTIRE box off-screen
+              before reaching its target, leaving nothing to paint — that was
+              the hard seam. Anchor at 105vh (bottom bloom) travels exactly
+              -110vh to land at -5vh, matching onboarding's "at 50% -5%". */}
           <motion.div
-            className="absolute inset-0 -z-10"
-            initial={{ opacity: 0 }}
-            animate={
-              gradientRising
-                ? {
-                    opacity: 1,
-                    background:
-                      "radial-gradient(ellipse 140% 60% at 50% -5%, rgba(251,146,60,0.5) 0%, rgba(253,186,116,0.35) 45%, transparent 68%), #FFF5EE",
-                  }
-                : { opacity: 0 }
-            }
+            className="absolute left-0 top-0 w-full -z-10"
+            style={{
+              height: "300vh",
+              background:
+                "radial-gradient(ellipse 140vw 60vh at 50% 105vh, rgba(251,146,60,0.5) 0%, rgba(253,186,116,0.35) 45%, transparent 68%), #FFF5EE",
+            }}
+            initial={{ y: "0vh" }}
+            animate={{ y: gradientRising ? "-110vh" : "0vh" }}
             transition={{ duration: 0.65, ease: [0.65, 0, 0.35, 1] }}
           />
 
           <motion.div
-            className="relative w-40 aspect-[3/1] z-10"
+            className="relative w-40 aspect-3/1 z-10"
             initial={{ opacity: 0, y: 10 }}
             animate={
               isFlipping

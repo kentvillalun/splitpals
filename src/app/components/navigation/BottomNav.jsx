@@ -81,7 +81,7 @@ export const BottomNav = () => {
           </label>
         </button>
       </div>
-      <button className="w-16 flex items-center justify-center h-16 gradient-button rounded-[18px]">
+      <button className="w-16 flex items-center justify-center h-16 gradient-button rounded-[18px]" onClick={() => router.push('/bills/new')}>
         <PlusIcon className="w-5 stroke-3 stroke-white" />
       </button>
     </div>

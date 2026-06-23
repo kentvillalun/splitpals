@@ -30,7 +30,7 @@ function Toggle({ enabled, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className={`w-11 h-6 rounded-full transition-colors duration-200 relative flex-shrink-0 ${
+      className={`w-11 h-6 rounded-full transition-colors duration-200 relative shrink-0 ${
         enabled ? "bg-orange" : "bg-black/10"
       }`}
     >

@@ -12,9 +12,11 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const [name, setName] = useState("");
+  const router = useRouter()
 
   const {
     data: bills,
@@ -109,19 +111,17 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col px-4 gap-4">
-              <div className="flex flex-row">
-                <div className="flex flex-row bg-white rounded-2xl w-full h-auto p-4 gap-4">
-                  <div className="rounded-full gradient-button p-3 flex items-center justify-center">
-                    <PlusIcon className="w-5 stroke-white stroke-3" />
-                  </div>
-                  <div className="flex flex-col ">
-                    <p className="text-base font-semibold">New Bill</p>
-                    <p className="text-text-secondary text-sm">
-                      Split with your friends
-                    </p>
-                  </div>
+              <Card className="flex flex-row bg-white rounded-2xl w-full h-auto p-4 gap-4 items-start" handleOnClick={() => router.push('/bills/new')}>
+                <div className="rounded-full gradient-button p-3 flex items-center justify-center">
+                  <PlusIcon className="w-5 stroke-white stroke-3" />
                 </div>
-              </div>
+                <div className="flex flex-col items-start">
+                  <p className="text-base font-semibold">New Bill</p>
+                  <p className="text-text-secondary text-sm">
+                    Split with your friends
+                  </p>
+                </div>
+              </Card>
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
