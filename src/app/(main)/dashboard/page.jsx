@@ -78,7 +78,7 @@ export default function DashboardPage() {
     <>
       <DesktopGuard />
       <Page className="bg-backgroud">
-        <PageContent className="px-0">
+        <PageContent className="px-0 ">
           <div className="flex flex-col w-full gap-5.5">
             {/* orange bg — full width always */}
             <div className="relative w-full min-h-30">
@@ -110,8 +110,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-col px-4 gap-4">
-              <Card className="flex flex-row bg-white rounded-2xl w-full h-auto p-4 gap-4 items-start" handleOnClick={() => router.push('/bills/new')}>
+            <div className="flex flex-col px-4 gap-4 max-w-xl mx-auto w-full">
+              <Card className="flex flex-row bg-white rounded-2xl max-w-xl w-full h-auto p-4 gap-4 items-start mx-auto" handleOnClick={() => router.push('/bills/new')}>
                 <div className="rounded-full gradient-button p-3 flex items-center justify-center">
                   <PlusIcon className="w-5 stroke-white stroke-3" />
                 </div>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                     const peopleCount = b.persons?.length ?? 0;
 
                     return (
-                      <Card key={b.id} className="p-0!">
+                      <Card key={b.id} className="p-0!" handleOnClick={() => router.push(`/histoty/${b.id}`)}>
                         <div className="flex flex-row justify-between border-b border-gray-100 p-3">
                           <div className="flex flex-col">
                             <p className="text-base font-semibold text-text-primary">

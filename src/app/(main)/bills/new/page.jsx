@@ -143,6 +143,7 @@ export default function NewBillPage() {
       return;
     }
     haptic.medium();
+    setSheetMode("review");
     setSheetOpen(true);
   }
 
@@ -201,7 +202,28 @@ export default function NewBillPage() {
 
     haptic.success();
     setSheetOpen(false);
-    router.push(`/history/${bill.id}`);
+    router.push(`/receipt?id=${bill.id}`);
+  }
+
+  const [sheetMode, setSheetMode] = useState(null); // 'review' | 'abandon' | null
+
+  const hasUnsavedProgress =
+    persons.some((p) => p.name.trim()) ||
+    persons.some((p) => p.items.some((i) => i.name.trim()));
+
+  function handleCancelTap() {
+    haptic.light();
+    if (!hasUnsavedProgress) {
+      router.push("/dashboard");
+      return;
+    }
+    setSheetMode("abandon");
+    setSheetOpen(true);
+  }
+
+  function handleConfirmAbandon() {
+    haptic.medium();
+    router.push("/dashboard");
   }
 
   return (
@@ -214,8 +236,8 @@ export default function NewBillPage() {
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">
               <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
                 <button
-                  onClick={() => router.back()}
-                  className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150 flex-shrink-0"
+                  onClick={handleCancelTap}
+                  className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150 shrink-0"
                 >
                   <ArrowLeftIcon className="w-4 stroke-white" />
                 </button>
@@ -238,16 +260,16 @@ export default function NewBillPage() {
                     <p className="text-base font-semibold text-white truncate">
                       {billName}
                     </p>
-                    <PencilIcon className="w-3.5 stroke-white/70 flex-shrink-0" />
+                    <PencilIcon className="w-3.5 stroke-white/70 shrink-0" />
                   </button>
                 )}
 
-                <div className="w-8 h-8 flex-shrink-0" />
+                <div className="w-8 h-8 shrink-0" />
               </div>
             </div>
 
             {/* Spacer so content doesn't sit under the fixed header */}
-            <div className="h-[88px]" />
+            <div className="h-22" />
 
             <div className="max-w-xl mx-auto w-full px-4 flex flex-col gap-4 pb-32 -mt-5">
               {/* Person cards */}
@@ -264,7 +286,7 @@ export default function NewBillPage() {
                     {/* Person header */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <UserCircleIcon className="w-5 text-orange flex-shrink-0" />
+                        <UserCircleIcon className="w-5 text-orange shrink-0" />
                         <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
                           Person {idx + 1}
                         </p>
@@ -272,7 +294,7 @@ export default function NewBillPage() {
                       {persons.length > 1 && (
                         <button
                           onClick={() => removePerson(person.id)}
-                          className="flex-shrink-0"
+                          className="shrink-0"
                         >
                           <TrashIcon className="w-4 text-text-secondary/50" />
                         </button>
@@ -324,7 +346,7 @@ export default function NewBillPage() {
                                   placeholder="Item name"
                                   className="flex-1 text-sm outline-none min-w-0"
                                 />
-                                <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                   <span className="text-sm text-text-secondary">
                                     ₱
                                   </span>
@@ -348,7 +370,7 @@ export default function NewBillPage() {
                                     onClick={() =>
                                       removeItem(person.id, item.id)
                                     }
-                                    className="flex-shrink-0"
+                                    className="shrink-0"
                                   >
                                     <TrashIcon className="w-3.5 text-text-secondary/40" />
                                   </button>
@@ -366,7 +388,7 @@ export default function NewBillPage() {
                                   )
                                 }
                                 placeholder="Add a note (optional)"
-                                className="text-xs text-text-secondary outline-none bg-black/[0.02] rounded-lg px-2 py-1.5"
+                                className="text-xs text-text-secondary outline-none bg-black/2 rounded-lg px-2 py-1.5"
                               />
                             </motion.div>
                           ))}
@@ -407,7 +429,7 @@ export default function NewBillPage() {
           </div>
 
           {/* Sticky bottom bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-backgroud px-4 pt-3 pb-6 border-t border-black/[0.04]">
+          <div className="fixed bottom-0 left-0 right-0 bg-backgroud px-4 pt-3 pb-6 border-t border-black/4">
             <div className="max-w-xl mx-auto flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
@@ -463,43 +485,82 @@ export default function NewBillPage() {
                   }}
                 >
                   <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
-                  <div className="flex flex-col gap-1 items-center text-center">
-                    <p className="font-display text-xl font-bold">
-                      Double-check before sharing
-                    </p>
-                    <p className="text-text-secondary text-sm max-w-60">
-                      {persons.filter((p) => p.name.trim()).length} people ·{" "}
-                      ₱{grandTotal.toFixed(2)} total. Make sure names and
-                      amounts are correct.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 w-full items-center max-w-xl">
-                    <button
-                      onClick={handleConfirmSave}
-                      disabled={isSaving}
-                      className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body disabled:opacity-60"
-                      style={{
-                        background:
-                          "linear-gradient(to bottom, #2a2a2a, #1a1a1a)",
-                        borderBottom: "1.5px solid #0a0a0a",
-                      }}
-                    >
-                      {isSaving && (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      )}
-                      {isSaving ? "Saving..." : "Yes, continue"}
-                    </button>
-                    <button
-                      className="text-text-secondary font-body text-xs"
-                      disabled={isSaving}
-                      onClick={() => {
-                        haptic.light();
-                        setSheetOpen(false);
-                      }}
-                    >
-                      Let me check again
-                    </button>
-                  </div>
+
+                  {sheetMode === "review" ? (
+                    <>
+                      <div className="flex flex-col gap-1 items-center text-center">
+                        <p className="font-display text-xl font-bold">
+                          Double-check before sharing
+                        </p>
+                        <p className="text-text-secondary text-sm max-w-60">
+                          {persons.filter((p) => p.name.trim()).length} people
+                          · ₱{grandTotal.toFixed(2)} total. Make sure names
+                          and amounts are correct.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 w-full items-center max-w-xl">
+                        <button
+                          onClick={handleConfirmSave}
+                          disabled={isSaving}
+                          className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body disabled:opacity-60"
+                          style={{
+                            background:
+                              "linear-gradient(to bottom, #2a2a2a, #1a1a1a)",
+                            borderBottom: "1.5px solid #0a0a0a",
+                          }}
+                        >
+                          {isSaving && (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          )}
+                          {isSaving ? "Saving..." : "Yes, continue"}
+                        </button>
+                        <button
+                          className="text-text-secondary font-body text-xs"
+                          disabled={isSaving}
+                          onClick={() => {
+                            haptic.light();
+                            setSheetOpen(false);
+                          }}
+                        >
+                          Let me check again
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-1 items-center text-center">
+                        <p className="font-display text-xl font-bold">
+                          Abandon this bill?
+                        </p>
+                        <p className="text-text-secondary text-sm max-w-60">
+                          Your progress won't be saved. Are you sure you want
+                          to leave?
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 w-full items-center max-w-xl">
+                        <button
+                          onClick={handleConfirmAbandon}
+                          className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
+                          style={{
+                            background:
+                              "linear-gradient(to bottom, #2a2a2a, #1a1a1a)",
+                            borderBottom: "1.5px solid #0a0a0a",
+                          }}
+                        >
+                          Yes, abandon
+                        </button>
+                        <button
+                          className="text-text-secondary font-body text-xs"
+                          onClick={() => {
+                            haptic.light();
+                            setSheetOpen(false);
+                          }}
+                        >
+                          No, keep editing
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               </>
             )}

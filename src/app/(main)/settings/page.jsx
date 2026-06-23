@@ -147,7 +147,7 @@ export default function SettingsPage() {
   return (
     <>
       <DesktopGuard />
-      <Page className="bg-backgroud">
+      <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
             {/* Header */}

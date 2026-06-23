@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 export default function MainLayout({ children }) {
   const pathname = usePathname();
 
-  const paths = ["/bills/new", "/history/"];
+  const paths = ["/bills/new", "/history/", "/receipt"];
 
   const hideNav = paths.some((paths) => pathname.startsWith(paths));
   return (
