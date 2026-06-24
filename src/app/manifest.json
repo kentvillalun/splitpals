@@ -20,6 +20,6 @@
   "display": "standalone",
   "start_url": "/launch",
   "orientation": "portrait",
-  "scope": "/launch",
+  "scope": "/",
   "description": "A PWA for splitting bills with friends. Track who ordered what, calculate each person's share, and share a clean receipt summary instantly."
 }
