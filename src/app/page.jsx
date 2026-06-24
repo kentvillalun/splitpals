@@ -481,6 +481,7 @@ export default function LandingPage() {
                 src="/corgis/waggy-corgi.svg"
                 alt="SplitPals corgi mascot with sparkles"
                 fill
+                priority
               />
             </motion.div>
           </motion.div>
