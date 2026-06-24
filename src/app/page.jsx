@@ -532,7 +532,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <footer className="max-w-6xl mx-auto px-6 md:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-dark/6">
+      <footer className="max-w-6xl mx-auto px-6 md:px-8 py-10 flex flex-row sm:flex-row items-start  justify-between gap-4 border-t border-dark/6">
         <div className="flex items-start flex-col ">
           <div className="w-full max-w-23 aspect-3/1 relative">
             <Image src={"/onboarding/logo.svg"} fill priority alt="Splitpals" />
