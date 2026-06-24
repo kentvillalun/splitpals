@@ -139,13 +139,13 @@ export default function OnboardingPage() {
             <div className="flex flex-col  justify-between gap-3">
               <div className="flex flex-row items-center justify-between">
                 <div className="w-full max-w-25 aspect-3/1 relative">
-                <Image
-                  src={"/onboarding/logo.svg"}
-                  fill
-                  priority
-                  alt="Splitpals"
-                />
-              </div>
+                  <Image
+                    src={"/onboarding/logo.svg"}
+                    fill
+                    priority
+                    alt="Splitpals"
+                  />
+                </div>
                 {/* <p className={`font-display text-primary text-xl font-bold`}>
                   Split<span className="text-text-primary">Pals</span>
                 </p> */}
@@ -744,8 +744,9 @@ export default function OnboardingPage() {
                     <button
                       className="flex flex-row items-center justify-between w-full gradient-button py-3.5 px-4 rounded-2xl disabled:opacity-25 disabled:pointer-events-none hover:cursor-pointer transition-all active:scale-95 duration-200 ease-in-out hover:opacity-90"
                       onClick={() => {
-                        haptic.medium()
-                        openSheet("next")}}
+                        haptic.medium();
+                        openSheet("next");
+                      }}
                     >
                       <p className="font-bold text-sm text-white">
                         Get started — It's free
@@ -817,22 +818,20 @@ export default function OnboardingPage() {
                         borderBottom: "1.5px solid #0a0a0a",
                       }}
                       onClick={async () => {
-                        haptic.medium()
+                        haptic.medium();
 
-                        const {error} = await supabase.auth.signInWithOAuth({
+                        const { error } = await supabase.auth.signInWithOAuth({
                           provider: "google",
                           options: {
                             redirectTo: `${window.location.origin}/auth/callback`,
-                            
-                          }
-                        })
-
-                        
-                     
+                          },
+                        });
 
                         if (error) {
-                          haptic.error()
-                          toast.error("Something went wrong. Please try again.")
+                          haptic.error();
+                          toast.error(
+                            "Something went wrong. Please try again.",
+                          );
                         }
                       }}
                     >
@@ -844,8 +843,9 @@ export default function OnboardingPage() {
                     <button
                       className="text-text-secondary font-body text-xs"
                       onClick={() => {
-                        haptic.light()
-                        setSheetOpen(false)}}
+                        haptic.light();
+                        setSheetOpen(false);
+                      }}
                     >
                       Maybe later
                     </button>
