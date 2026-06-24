@@ -95,7 +95,7 @@ export default function HistoryDetailPage() {
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5 relative">
             {/* Header */}
-            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50">
+            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50 ">
               <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <button

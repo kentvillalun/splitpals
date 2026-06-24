@@ -12,7 +12,7 @@ export const FloatingNav = ({ scrolled, menuOpen, setMenuOpen }) => {
   }
   return (
     <nav
-      className={`fixed z-40 inset-x-0 md:mx-auto mx-1  transition-all duration-400 ease-in-out top-3 border-transparent
+      className={`fixed z-50 inset-x-0 md:mx-auto mx-1  transition-all duration-400 ease-in-out top-3 border-transparent
           ${
             scrolled
               ? "top-4 bg-white/75 backdrop-blur-lg lg:max-w-5xl md:max-w-2xl mx-6 md:mx-auto rounded-xl md:rounded-full border border-orange/10 shadow-[0_8px_30px_rgba(249,115,22,0.12)]"
@@ -22,7 +22,7 @@ export const FloatingNav = ({ scrolled, menuOpen, setMenuOpen }) => {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex flex-row justify-between items-center h-14 md:mx-2">
-          <div className="w-full max-w-25 aspect-3/1 relative">
+          <div className="w-full max-w-23 aspect-3/1 relative">
             <Image src={"/onboarding/logo.svg"} fill priority alt="Splitpals" />
           </div>
 
