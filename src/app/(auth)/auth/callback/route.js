@@ -17,6 +17,7 @@ export async function GET(request) {
   } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !session) {
+    console.log("exchange error:", error);
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 

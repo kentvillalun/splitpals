@@ -78,7 +78,7 @@ export default function DashboardPage() {
     <>
       <DesktopGuard />
       <Page className="bg-backgroud lg:hidden">
-        <PageContent className="px-0 mt-10">
+        <PageContent className="px-0 pt-10">
           <div className="flex flex-col w-full gap-5.5">
             {/* orange bg — full width always */}
             <div className="relative w-full min-h-30">

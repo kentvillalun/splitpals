@@ -151,7 +151,7 @@ export default function SettingsPage() {
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
             {/* Header */}
-            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed">
+            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50">
               <div className="max-w-xl mx-auto flex items-center justify-between">
                 <button
                   onClick={() => router.back()}

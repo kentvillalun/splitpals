@@ -57,7 +57,7 @@ export default function BillsPage() {
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
             {/* Orange gradient hero */}
-            <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl fixed">
+            <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl fixed z-50">
               <div className="max-w-xl mx-auto flex flex-col gap-4">
                 {/* Back button + page name */}
                 <div className="flex items-center justify-between">
