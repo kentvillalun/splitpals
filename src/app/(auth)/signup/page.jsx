@@ -20,7 +20,7 @@ export default function SignupPage() {
         isGradient={true}
         className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15"
       >
-        <main className="flex flex-col items-center min-w-full h-screen justify-between">
+        <main className="flex flex-col items-center min-w-full h-svh justify-between">
           <div className="max-w-40 relative aspect-3/2 w-full flex items-start mx-auto">
             <Image
               priority

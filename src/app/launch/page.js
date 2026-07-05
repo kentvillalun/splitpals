@@ -97,7 +97,7 @@ export default function RootPage() {
       {!isExiting && (
         <motion.div
           key="splash"
-          className="w-full h-screen overflow-hidden flex items-center justify-center fixed inset-0 z-50"
+          className="w-full h-dvh overflow-hidden flex items-center justify-center fixed inset-0 z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

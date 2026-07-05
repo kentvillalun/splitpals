@@ -35,7 +35,7 @@ export default function ReadyPage() {
     <>
       <DesktopGuard />
       <Page className="font-body! gradient-splash lg:hidden flex flex-col items-center px-4">
-        <main className="flex flex-col items-center min-w-full h-screen ">
+        <main className="flex flex-col items-center min-w-full h-svh ">
           <div className="max-w-35 relative aspect-3/2 w-full flex items-center mx-auto">
             <Image priority src={"/onboarding/logo.svg"} fill alt="SplitPals" />
           </div>

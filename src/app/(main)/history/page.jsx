@@ -6,7 +6,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { Card } from "@/app/components/ui/Card";
 import { formatDate } from "@/app/lib/formatDate";
 import { useFetch } from "@/app/lib/hooks/useFetch";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Skeleton from "react-loading-skeleton";
@@ -16,6 +16,18 @@ import Image from "next/image";
 export default function BillsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState("all");
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const updateHeight = () => setHeaderHeight(el.offsetHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const {
     data: bills,
@@ -56,54 +68,61 @@ export default function BillsPage() {
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
-            {/* Orange gradient hero */}
-            <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl fixed z-50">
-              <div className="max-w-xl mx-auto flex flex-col gap-4">
-                {/* Back button + page name */}
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => router.back()}
-                    className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150"
-                  >
-                    <ArrowLeftIcon className="w-4 stroke-white" />
-                  </button>
-                  <p className="text-base font-semibold text-white">
-                    Bill Transactions
-                  </p>
-                  <div className="w-8 h-8"></div>
-                </div>
+            <div
+              ref={headerRef}
+              className="fixed top-0 left-0 right-0 z-50 flex flex-col"
+            >
+              {/* Orange gradient hero */}
+              <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl">
+                <div className="max-w-xl mx-auto flex flex-col gap-4">
+                  {/* Back button + page name */}
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => router.back()}
+                      className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150"
+                    >
+                      <ArrowLeftIcon className="w-4 stroke-white" />
+                    </button>
+                    <p className="text-base font-semibold text-white">
+                      Bill Transactions
+                    </p>
+                    <div className="w-8 h-8"></div>
+                  </div>
 
-                {/* Total unpaid stat */}
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-xs font-semibold text-white/70 uppercase tracking-wide">
-                    Total Unpaid
-                  </p>
-                  <p className="text-3xl font-display font-black text-white">
-                    ₱{totalUnpaid.toFixed(2)}
-                  </p>
+                  {/* Total unpaid stat */}
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+                      Total Unpaid
+                    </p>
+                    <p className="text-3xl font-display font-black text-white">
+                      ₱{totalUnpaid.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter pills */}
+              <div className="bg-backgroud w-full px-4 py-3">
+                <div className="max-w-xl mx-auto flex gap-2">
+                  {["all", "unsettled", "settled"].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors duration-150 ${
+                        filter === f
+                          ? "gradient-button text-white"
+                          : "bg-white text-text-secondary"
+                      }`}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
-            <div className="h-37.75"></div>
+            <div style={{ height: headerHeight }}></div>
 
             <div className="max-w-xl mx-auto w-full flex flex-col px-4 gap-4">
-              {/* Filter pills */}
-              <div className="flex gap-2">
-                {["all", "unsettled", "settled"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors duration-150 ${
-                      filter === f
-                        ? "gradient-button text-white"
-                        : "bg-white text-text-secondary"
-                    }`}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
-              </div>
-
               <div className="flex flex-col gap-2">
                 {isLoading ? (
                   <Card className="p-0!">

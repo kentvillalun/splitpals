@@ -59,7 +59,7 @@ export default function SetupPage() {
     <>
       <DesktopGuard />
       <Page className="lg:hidden overflow-hidden flex-col items-center px-4 gap-15 gradient-splash font-body!">
-        <main className="flex flex-col items-center min-w-full h-screen justify-between">
+        <main className="flex flex-col items-center min-w-full h-svh justify-between">
           <motion.div
             key={"logo"}
             className="max-w-35 relative aspect-3/2 w-full flex items-start mx-auto "
