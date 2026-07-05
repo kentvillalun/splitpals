@@ -20,23 +20,29 @@ export async function GET(request) {
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 
-  const { error: upsertError } = await supabase.from("profiles").upsert(
-    {
-      id: session.user.id,
-      name: session.user.user_metadata?.full_name ?? null,
-    },
-    { onConflict: "id" },
-  );
-
-  console.log("upsert error:", upsertError);
-
-  const { data: profile } = await supabase
+  const { data: existingProfile } = await supabase
     .from("profiles")
-    .select("has_completed_onboarding")
+    .select("id, has_completed_onboarding")
     .eq("id", session.user.id)
     .single();
 
-  if (!profile?.has_completed_onboarding) {
+  if (existingProfile) {
+    await supabase
+      .from("profiles")
+      .upsert({ id: session.user.id }, { onConflict: "id" });
+  } else {
+    await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name ?? null,
+        },
+        { onConflict: "id" },
+      );
+  }
+
+  if (!existingProfile?.has_completed_onboarding) {
     return NextResponse.redirect(new URL("/setup", request.url));
   }
 
