@@ -13,10 +13,12 @@ import Image from "next/image";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useRouter } from "next/navigation";
+import { InstallCard } from "@/app/components/InstallCard";
+import { ActionCard } from "@/app/components/ui/ActionCard";
 
 export default function DashboardPage() {
   const [name, setName] = useState("");
-  const router = useRouter()
+  const router = useRouter();
 
   const {
     data: bills,
@@ -110,24 +112,24 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-col px-4 gap-4 max-w-xl mx-auto w-full">
-              <Card className="flex flex-row bg-white rounded-2xl max-w-xl w-full h-auto p-4 gap-4 items-start mx-auto" handleOnClick={() => router.push('/bills/new')}>
-                <div className="rounded-full gradient-button p-3 flex items-center justify-center">
-                  <PlusIcon className="w-5 stroke-white stroke-3" />
-                </div>
-                <div className="flex flex-col items-start">
-                  <p className="text-base font-semibold">New Bill</p>
-                  <p className="text-text-secondary text-sm">
-                    Split with your friends
-                  </p>
-                </div>
-              </Card>
+            <div className="flex flex-col px-4 gap-2 max-w-xl mx-auto w-full">
+              <ActionCard
+                icon={<PlusIcon className="w-5 stroke-white stroke-3" />}
+                text={"New Bill"}
+                subtext={"Split with your friends"}
+                handleClick={() => router.push("/bills/new")}
+              />
+
+              <InstallCard />
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <p className="text-base font-semibold">Recent bills</p>
                   {bills.length !== 0 && (
-                    <button className="text-sm font-semibold text-primary" onClick={() => router.push('/history')}>
+                    <button
+                      className="text-sm font-semibold text-primary"
+                      onClick={() => router.push("/history")}
+                    >
                       See all
                     </button>
                   )}
@@ -173,7 +175,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 ) : bills.length === 0 ? (
-                  <div className="flex flex-col items-center text-center py-10 gap-2">
+                  <div className="flex flex-col items-center text-center py-10 gap-1">
                     <div className="w-24 h-24 relative">
                       <Image
                         src="/corgis/sad-corgi.svg"
@@ -185,8 +187,7 @@ export default function DashboardPage() {
                       No bills yet
                     </p>
                     <p className="text-text-secondary text-sm max-w-55">
-                      Start splitting with friends — tap "New Bill" above to
-                      create your first one.
+                      Start splitting with friends. Tap 'New Bill' above to create your first one.
                     </p>
                   </div>
                 ) : (
@@ -194,7 +195,11 @@ export default function DashboardPage() {
                     const peopleCount = b.persons?.length ?? 0;
 
                     return (
-                      <Card key={b.id} className="p-0!" handleOnClick={() => router.push(`/history/${b.id}`)}>
+                      <Card
+                        key={b.id}
+                        className="p-0!"
+                        handleOnClick={() => router.push(`/history/${b.id}`)}
+                      >
                         <div className="flex flex-row justify-between border-b border-gray-100 p-3">
                           <div className="flex flex-col">
                             <p className="text-base font-semibold text-text-primary">

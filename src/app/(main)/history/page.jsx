@@ -177,7 +177,7 @@ export default function BillsPage() {
                     </p>
                     <p className="text-text-secondary text-sm max-w-55">
                       {filter === "all"
-                        ? "Start splitting with friends — create your first bill."
+                        ? "Start splitting with friends. Create your first bill."
                         : `You have no ${filter} bills yet.`}
                     </p>
                   </div>
