@@ -33,7 +33,7 @@ export const InstallCard = () => {
   useEffect(() => {
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      !window.navigator.standalone;
+      window.navigator.standalone;
 
     if (!isStandalone) return setShowCard(true);
   }, []);
