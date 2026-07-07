@@ -23,7 +23,7 @@ export const ActionCard = ({
           {isDismissable && (
             <button className="flex items-start" onClick={(e) => {
                 e.stopPropagation()
-                onDismiss
+                onDismiss()
             }}>
               <XMarkIcon className="w-4 text-text-secondary" />
             </button>

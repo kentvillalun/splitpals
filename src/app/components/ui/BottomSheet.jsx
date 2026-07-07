@@ -34,6 +34,7 @@ export const BottomSheet = ({ children, setSheetOpen }) => {
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
         {children}
+        
       </motion.div>
     </AnimatePresence>,
     document.body,
