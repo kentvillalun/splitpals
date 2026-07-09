@@ -537,13 +537,21 @@ export default function LandingPage() {
           <div className="w-full max-w-23 aspect-3/1 relative">
             <Image src={"/onboarding/logo.svg"} fill priority alt="Splitpals" />
           </div>
-          <span className="text-sm text-dark/45">Made with ❤️ by Kent Villalun</span>
+          <span className="text-sm text-dark/45">
+            Made with ❤️ by Kent Villalun
+          </span>
           <div className="flex items-center gap-2 mt-2 text-xs text-dark/40">
-            <Link href="/privacy" className="hover:text-dark/60 transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-dark/60 transition-colors"
+            >
               Privacy Policy
             </Link>
             <span>·</span>
-            <Link href="/terms" className="hover:text-dark/60 transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-dark/60 transition-colors"
+            >
               Terms of Service
             </Link>
           </div>
