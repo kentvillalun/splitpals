@@ -11,6 +11,7 @@ import { ArrowRightIcon, PlusIcon, ShareIcon } from "@heroicons/react/16/solid";
 import CountUp from "react-countup";
 import { createPortal } from "react-dom";
 import { FaGoogle } from "react-icons/fa";
+import Link from "next/link";
 import { haptic } from "@/app/lib/haptic";
 import { supabase } from "@/app/lib/supabase";
 import { toast } from "sonner";
@@ -840,6 +841,25 @@ export default function OnboardingPage() {
                       </div>
                       <p className="">Continue with Google</p>
                     </button>
+                    <p className="text-text-secondary text-xs text-center font-body px-2">
+                      By continuing, you agree to our{" "}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        className="text-orange underline underline-offset-2"
+                      >
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        className="text-orange underline underline-offset-2"
+                      >
+                        Privacy Policy
+                      </Link>
+                      .
+                    </p>
                     <button
                       className="text-text-secondary font-body text-xs"
                       onClick={() => {

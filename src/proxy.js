@@ -25,7 +25,18 @@ export default async function proxy(request) {
     }
   )
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const protectedPaths = ['/dashboard', '/bills', '/history', '/receipt', '/settings']
+  const isProtectedRoute = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/onboarding', request.url))
+  }
 
   return supabaseResponse
 }
