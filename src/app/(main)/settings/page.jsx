@@ -126,7 +126,7 @@ export default function SettingsPage() {
     }
 
     haptic.success();
-    router.replace("/onboarding");
+    router.replace("../signup");
   }
 
   function toggleNotifications() {
