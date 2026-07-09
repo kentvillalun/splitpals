@@ -131,7 +131,7 @@ export default function OnboardingPage() {
   return (
     <>
       <DesktopGuard />
-      <Page className="gradient-onboarding">
+      <Page className="gradient-onboarding lg:hidden">
         <PageTransition
           key={"page"}
           className="overflow-hidden w-full px-4 pt-6 mobile:pb-15 xs:pb-10"
