@@ -287,7 +287,7 @@ export default function SettingsPage() {
 
                   <button
                     className={menuItemClass}
-                    onClick={() => toast.info("Coming soon!")}
+                    onClick={() => router.push("../terms")}
                   >
                     <div className="flex items-center gap-3">
                       <DocumentTextIcon className="w-5 text-text-secondary" />
@@ -300,7 +300,7 @@ export default function SettingsPage() {
 
                   <button
                     className={menuItemClass}
-                    onClick={() => toast.info("Coming soon!")}
+                    onClick={() => router.push("../privacy")}
                   >
                     <div className="flex items-center gap-3">
                       <ShieldCheckIcon className="w-5 text-text-secondary" />

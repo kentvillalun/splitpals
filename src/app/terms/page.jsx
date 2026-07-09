@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { BackButton } from "../components/navigation/BackButton";
 
 export const metadata = {
   title: "Terms of Service – SplitPals",
@@ -10,13 +11,7 @@ export default function TermsOfServicePage() {
   return (
     <div className="font-body min-h-screen bg-orange-pale">
       <div className="max-w-2xl mx-auto px-6 md:px-8 py-12 md:py-16">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-dark/55 hover:text-orange transition-colors mb-10"
-        >
-          <ArrowLeftIcon className="w-4 h-4" />
-          Back to home
-        </Link>
+        <BackButton />
 
         <h1 className="font-display text-3xl md:text-4xl font-extrabold text-dark mb-2 leading-tight">
           Terms of Service for SplitPals
