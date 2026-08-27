@@ -460,7 +460,7 @@ export default function LandingPage() {
           background: "linear-gradient(155deg, #FFF5EE 0%, #FFF0E5 100%)",
         }}
       >
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center ">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
             whileInView={{ opacity: 1, scale: 1, rotate: 0 }}

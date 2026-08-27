@@ -7,11 +7,12 @@ export const ActionCard = ({
   subtext,
   handleClick,
   isDismissable = false,
-  onDismiss
+  onDismiss,
+  customClassName = ""
 }) => {
   return (
     <Card
-      className="flex flex-row bg-white rounded-2xl max-w-xl w-full h-auto p-4 gap-4 mx-auto items-center"
+      className={`flex flex-row bg-white rounded-2xl max-w-xl w-full h-auto p-4 gap-4 mx-auto items-center ${customClassName}`}
       handleOnClick={handleClick}
     >
       <div className="rounded-full gradient-button p-3 flex items-center justify-center">

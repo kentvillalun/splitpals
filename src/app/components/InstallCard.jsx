@@ -77,7 +77,7 @@ export const InstallCard = () => {
       {isSheetOpen && (
         <BottomSheet setSheetOpen={setIsSheetOpen}>
           <div className="font-body flex flex-col items-start w-full gap-4">
-            <h1 className="text-text-primary text-base font-semibold">
+            <h1 className="text-text-primary text-xl font-bold font-display">
               Install SplitPals
             </h1>
             <div className="flex flex-col gap-2">

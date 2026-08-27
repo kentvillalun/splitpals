@@ -14,10 +14,12 @@ import {
 } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
 import { haptic } from "@/app/lib/haptic";
+import { useNewBillSheet } from "@/app/components/NewBillSheetProvider";
 
 export const BottomNav = () => {
   const pathName = usePathname();
   const router = useRouter();
+  const { openNewBillSheet } = useNewBillSheet();
 
   const inDashboard = pathName.startsWith("/dashboard");
   const inBills = pathName.startsWith("/history");
@@ -81,7 +83,13 @@ export const BottomNav = () => {
           </label>
         </button>
       </div>
-      <button className="w-16 flex items-center justify-center h-16 gradient-button rounded-[18px]" onClick={() => router.push('/bills/new')}>
+      <button
+        className="w-16 flex items-center justify-center h-16 gradient-button rounded-[18px]"
+        onClick={() => {
+          haptic.light();
+          openNewBillSheet();
+        }}
+      >
         <PlusIcon className="w-5 stroke-3 stroke-white" />
       </button>
     </div>

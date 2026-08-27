@@ -5,6 +5,8 @@ import { Toaster } from "sonner";
 import { BottomNav } from "../components/navigation/BottomNav";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { NewBillSheetProvider } from "../components/NewBillSheetProvider";
+import { ReceiptCaptureProvider } from "../components/ReceiptCaptureProvider";
 
 const TAB_ROUTES = ["/dashboard", "/history", "/settings"];
 
@@ -42,14 +44,16 @@ export default function MainLayout({ children }) {
       };
 
   return (
-    <>
-      <Toaster position="top-center" />
-      <AnimatePresence mode="wait">
-        <motion.main key={pathname} {...animationProps}>
-          {children}
-        </motion.main>
-      </AnimatePresence>
-      {!hideNav && <BottomNav />}
-    </>
+    <ReceiptCaptureProvider>
+      <NewBillSheetProvider>
+        <Toaster position="top-center" />
+        <AnimatePresence mode="wait">
+          <motion.main key={pathname} {...animationProps}>
+            {children}
+          </motion.main>
+        </AnimatePresence>
+        {!hideNav && <BottomNav />}
+      </NewBillSheetProvider>
+    </ReceiptCaptureProvider>
   );
 }

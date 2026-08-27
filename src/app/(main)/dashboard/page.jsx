@@ -15,10 +15,12 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { useRouter } from "next/navigation";
 import { InstallCard } from "@/app/components/InstallCard";
 import { ActionCard } from "@/app/components/ui/ActionCard";
+import { useNewBillSheet } from "@/app/components/NewBillSheetProvider";
 
 export default function DashboardPage() {
   const [name, setName] = useState("");
   const router = useRouter();
+  const { openNewBillSheet } = useNewBillSheet();
 
   const {
     data: bills,
@@ -117,7 +119,7 @@ export default function DashboardPage() {
                 icon={<PlusIcon className="w-5 stroke-white stroke-3" />}
                 text={"New Bill"}
                 subtext={"Split with your friends"}
-                handleClick={() => router.push("/bills/new")}
+                handleClick={() => openNewBillSheet()}
               />
 
               <InstallCard />

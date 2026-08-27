@@ -11,12 +11,12 @@ import { supabase } from "@/app/lib/supabase";
 import { haptic } from "@/app/lib/haptic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeftIcon,
   PencilIcon,
   TrashIcon,
   PlusIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
+import { PageHeader } from "@/app/components/layout/PageHeader";
 import { toast } from "sonner";
 
 let idCounter = 0;
@@ -233,43 +233,32 @@ export default function NewBillPage() {
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
             {/* Header — fixed at top */}
-            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">
-              <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+            <PageHeader onBack={handleCancelTap}>
+              {isEditingBillName ? (
+                <input
+                  autoFocus
+                  value={draftBillName}
+                  onChange={(e) => setDraftBillName(e.target.value)}
+                  onBlur={saveBillName}
+                  onKeyDown={(e) => e.key === "Enter" && saveBillName()}
+                  maxLength={40}
+                  className="text-base font-semibold text-white bg-white/15 rounded-lg px-2 py-1 outline-none flex-1 min-w-0 text-center"
+                />
+              ) : (
                 <button
-                  onClick={handleCancelTap}
-                  className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150 shrink-0"
+                  onClick={startEditingBillName}
+                  className="flex items-center gap-1.5 min-w-0 flex-1 justify-center"
                 >
-                  <ArrowLeftIcon className="w-4 stroke-white" />
+                  <p className="text-base font-semibold text-white truncate">
+                    {billName}
+                  </p>
+                  <PencilIcon className="w-3.5 stroke-white/70 shrink-0" />
                 </button>
-
-                {isEditingBillName ? (
-                  <input
-                    autoFocus
-                    value={draftBillName}
-                    onChange={(e) => setDraftBillName(e.target.value)}
-                    onBlur={saveBillName}
-                    onKeyDown={(e) => e.key === "Enter" && saveBillName()}
-                    maxLength={40}
-                    className="text-base font-semibold text-white bg-white/15 rounded-lg px-2 py-1 outline-none flex-1 min-w-0 text-center"
-                  />
-                ) : (
-                  <button
-                    onClick={startEditingBillName}
-                    className="flex items-center gap-1.5 min-w-0 flex-1 justify-center"
-                  >
-                    <p className="text-base font-semibold text-white truncate">
-                      {billName}
-                    </p>
-                    <PencilIcon className="w-3.5 stroke-white/70 shrink-0" />
-                  </button>
-                )}
-
-                <div className="w-8 h-8 shrink-0" />
-              </div>
-            </div>
+              )}
+            </PageHeader>
 
             {/* Spacer so content doesn't sit under the fixed header */}
-            <div className="h-22" />
+            <div className="h-23.5" />
 
             <div className="max-w-xl mx-auto w-full px-4 flex flex-col gap-4 pb-32 -mt-5">
               {/* Person cards */}
