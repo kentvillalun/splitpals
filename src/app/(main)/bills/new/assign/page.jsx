@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ChevronRightIcon,
   TrashIcon,
   XMarkIcon,
   UserCircleIcon,
@@ -18,17 +19,24 @@ import { useReceiptCapture } from "@/app/components/ReceiptCaptureProvider";
 import { AssignItemSheet } from "@/app/components/AssignItemSheet";
 import { haptic } from "@/app/lib/haptic";
 import { supabase } from "@/app/lib/supabase";
+import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
+import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
 
-let idCounter = 0;
+// crypto.randomUUID() (rather than an incrementing counter) so ids stay
+// unique across Fast Refresh reloads, which reset any module-level counter
+// but preserve this component's existing state — a reset counter would
+// otherwise start re-issuing ids already in use and collide as React keys.
 function tempId() {
-  idCounter += 1;
-  return `assign-temp-${idCounter}`;
+  return `assign-temp-${crypto.randomUUID()}`;
 }
 
-function splitWithLabel(item, persons, currentPersonId) {
+function splitWithLabel(item, persons, currentPersonId, currentUserId) {
   const others = item.assignedTo
     .filter((id) => id !== currentPersonId)
-    .map((id) => persons.find((p) => p.id === id)?.name || "someone");
+    .map((id) => {
+      const person = persons.find((p) => p.id === id);
+      return person ? getPersonDisplayName(person, currentUserId) : "someone";
+    });
 
   if (others.length === 0) return null;
   if (others.length <= 2) return `Split with ${others.join(" and ")}`;
@@ -38,6 +46,7 @@ function splitWithLabel(item, persons, currentPersonId) {
 export default function AssignItemsPage() {
   const router = useRouter();
   const { scannedItems } = useReceiptCapture();
+  const currentUser = useCurrentUser();
   const [items, setItems] = useState([]);
   const [persons, setPersons] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -138,18 +147,29 @@ export default function AssignItemsPage() {
     setAssigningItem(item);
   }
 
-  function handleAssignCommit({ existingPersonIds, contacts: selectedContacts, newNames }) {
+  function handleAssignCommit({
+    existingPersonIds,
+    contacts: selectedContacts,
+    newNames,
+    includeYou,
+  }) {
     const newPersonsFromContacts = selectedContacts.map((contact) => ({
       id: tempId(),
       name: contact.name,
       contactId: contact.id,
+      userId: null,
     }));
     const newPersonsFromNames = newNames.map((name) => ({
       id: tempId(),
       name,
       contactId: null,
+      userId: null,
     }));
-    const newPersons = [...newPersonsFromContacts, ...newPersonsFromNames];
+    const newYouPerson =
+      includeYou && currentUser
+        ? [{ id: tempId(), name: currentUser.name, contactId: null, userId: currentUser.id }]
+        : [];
+    const newPersons = [...newPersonsFromContacts, ...newPersonsFromNames, ...newYouPerson];
 
     const allAssigneeIds = [
       ...existingPersonIds,
@@ -163,10 +183,7 @@ export default function AssignItemsPage() {
     setItems((prev) =>
       prev.map((item) =>
         item.id === assigningItem.id
-          ? {
-              ...item,
-              assignedTo: [...new Set([...item.assignedTo, ...allAssigneeIds])],
-            }
+          ? { ...item, assignedTo: [...new Set(allAssigneeIds)] }
           : item
       )
     );
@@ -206,13 +223,33 @@ export default function AssignItemsPage() {
 
   const unassignedItems = items.filter((item) => item.assignedTo.length === 0);
   const grandTotal = items.reduce((sum, item) => sum + item.price, 0);
-  const canReview = items.length > 0 && unassignedItems.length === 0;
+  // Every person on the bill must be an assignee on at least one item —
+  // otherwise they'd be saved with nothing to pay for.
+  function personHasNoItems(person) {
+    return !items.some((item) => item.assignedTo.includes(person.id));
+  }
+  const canReview =
+    items.length > 0 &&
+    unassignedItems.length === 0 &&
+    !persons.some(personHasNoItems);
   const availableContacts = contacts.filter(
     (contact) => !persons.some((p) => p.contactId === contact.id)
   );
+  const showYou =
+    Boolean(currentUser) && !persons.some((p) => p.userId === currentUser.id);
 
   async function handleSaveTap() {
-    if (!canReview || isSaving) return;
+    if (isSaving) return;
+
+    const personWithNoItems = persons.find(personHasNoItems);
+    if (personWithNoItems) {
+      toast.error(
+        `${getPersonDisplayName(personWithNoItems, currentUser?.id)} has no items assigned — remove them or assign something first.`
+      );
+      return;
+    }
+
+    if (!canReview) return;
 
     setIsSaving(true);
     haptic.medium();
@@ -249,13 +286,16 @@ export default function AssignItemsPage() {
       // 2. Create persons — reuse an existing contact_id where we have one
       // (from "From contacts"); insert a new contact for freshly typed names.
       // A failed contact insert shouldn't sink the whole save, so it just
-      // falls back to a null contact_id for that person.
+      // falls back to a null contact_id for that person. YOU is never a
+      // contact — it's the bill owner themselves — so it's excluded from
+      // this auto-create-a-contact fallback and always saved with a null
+      // contact_id.
       const personIdMap = new Map();
 
       for (const person of persons) {
         let contactId = person.contactId ?? null;
 
-        if (!contactId) {
+        if (!contactId && !person.userId) {
           const { data: newContact, error: contactError } = await supabase
             .from("contacts")
             .insert({ user_id: user.id, name: person.name })
@@ -270,7 +310,12 @@ export default function AssignItemsPage() {
 
         const { data: createdPerson, error: personError } = await supabase
           .from("persons")
-          .insert({ name: person.name, bill_id: bill.id, contact_id: contactId })
+          .insert({
+            name: person.name,
+            bill_id: bill.id,
+            contact_id: contactId,
+            user_id: person.userId ?? null,
+          })
           .select()
           .single();
 
@@ -348,7 +393,7 @@ export default function AssignItemsPage() {
   return (
     <>
       <DesktopGuard />
-      <Page className="bg-backgroud">
+      <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
             <PageHeader onBack={handleBack}>
@@ -404,6 +449,9 @@ export default function AssignItemsPage() {
                   const personItems = items.filter((item) =>
                     item.assignedTo.includes(person.id)
                   );
+                  const displayName =
+                    getPersonDisplayName(person, currentUser?.id) ||
+                    `Person ${idx + 1}`;
 
                   return (
                     <motion.div
@@ -418,7 +466,7 @@ export default function AssignItemsPage() {
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <UserCircleIcon className="w-5 text-orange shrink-0" />
                           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide truncate">
-                            {person.name || `Person ${idx + 1}`}
+                            {displayName}
                           </p>
                         </div>
                         <button
@@ -438,7 +486,12 @@ export default function AssignItemsPage() {
                           <AnimatePresence initial={false}>
                             {personItems.map((item) => {
                               const share = item.price / item.assignedTo.length;
-                              const note = splitWithLabel(item, persons, person.id);
+                              const note = splitWithLabel(
+                                item,
+                                persons,
+                                person.id,
+                                currentUser?.id
+                              );
 
                               return (
                                 <motion.div
@@ -447,7 +500,8 @@ export default function AssignItemsPage() {
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, scale: 0.96 }}
                                   transition={{ duration: 0.2, ease: "easeOut" }}
-                                  className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5"
+                                  onClick={() => handleAssignTap(item)}
+                                  className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5 cursor-pointer transition-colors duration-150 active:bg-black/5"
                                 >
                                   <div className="flex flex-col min-w-0">
                                     <p className="text-sm font-medium truncate">
@@ -464,12 +518,14 @@ export default function AssignItemsPage() {
                                       ₱{share.toFixed(2)}
                                     </p>
                                     <button
-                                      onClick={() =>
-                                        handleRemoveShare(item.id, person.id)
-                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveShare(item.id, person.id);
+                                      }}
                                     >
                                       <XMarkIcon className="w-3.5 text-text-secondary/40" />
                                     </button>
+                                    <ChevronRightIcon className="w-4 text-text-secondary/40" />
                                   </div>
                                 </motion.div>
                               );
@@ -480,7 +536,7 @@ export default function AssignItemsPage() {
 
                       <div className="flex justify-between items-center pt-1 border-t border-dashed border-black/10">
                         <p className="text-xs text-text-secondary">
-                          {person.name || `Person ${idx + 1}`}'s total
+                          {displayName}'s total
                         </p>
                         <p className="font-bold text-orange text-sm">
                           ₱{personSubtotal(person.id).toFixed(2)}
@@ -494,7 +550,7 @@ export default function AssignItemsPage() {
           </div>
 
           {/* Sticky bottom bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-backgroud px-4 pt-3 pb-6 border-t border-black/4">
+          <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-backgroud px-4 pt-3 pb-6 border-t border-black/4">
             <div className="max-w-xl mx-auto flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
@@ -591,9 +647,13 @@ export default function AssignItemsPage() {
 
       {assigningItem && (
         <AssignItemSheet
+          key={assigningItem.id}
           item={assigningItem}
-          persons={persons}
+          persons={withDisplayNames(persons, currentUser?.id)}
           contacts={availableContacts}
+          currentUser={currentUser}
+          showYou={showYou}
+          initialPersonIds={assigningItem.assignedTo}
           onAssign={handleAssignCommit}
           onClose={() => setAssigningItem(null)}
         />

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
@@ -18,33 +17,80 @@ import {
 } from "@heroicons/react/24/outline";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { toast } from "sonner";
+import { AddPersonSheet } from "@/app/components/AddPersonSheet";
+import { AddSharedItemSheet } from "@/app/components/AddSharedItemSheet";
+import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
+import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
 
-let idCounter = 0;
+// crypto.randomUUID() (rather than an incrementing counter) so ids stay
+// unique across Fast Refresh reloads, which reset any module-level counter
+// but preserve this component's existing state — a reset counter would
+// otherwise start re-issuing ids already in use and collide as React keys.
 function tempId() {
-  idCounter += 1;
-  return `temp-${idCounter}`;
-}
-
-function emptyPerson() {
-  return {
-    id: tempId(),
-    name: "",
-    items: [{ id: tempId(), name: "", price: "", note: "" }],
-  };
+  return `temp-${crypto.randomUUID()}`;
 }
 
 export default function NewBillPage() {
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [mounted, setMounted] = useState(false);
   const [billName, setBillName] = useState("Bill 1");
   const [isEditingBillName, setIsEditingBillName] = useState(false);
   const [draftBillName, setDraftBillName] = useState("Bill 1");
-  const [persons, setPersons] = useState([emptyPerson()]);
+  // Starts empty — currentUser resolves asynchronously, so the default YOU
+  // card is seeded by the effect below once it's available, rather than
+  // synchronously here.
+  const [persons, setPersons] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [addPersonSheetOpen, setAddPersonSheetOpen] = useState(false);
+  const [sharedItems, setSharedItems] = useState([]);
+  const [sharedItemSheetOpen, setSharedItemSheetOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Seed a default "YOU" person once currentUser resolves — but only once,
+  // and only if nothing was added in the meantime (e.g. the user opened the
+  // Add Person sheet before currentUser finished loading).
+  const hasSeededYou = useRef(false);
+  useEffect(() => {
+    if (hasSeededYou.current || !currentUser) return;
+    hasSeededYou.current = true;
+    setPersons((prev) =>
+      prev.length === 0
+        ? [
+            {
+              id: tempId(),
+              name: currentUser.name,
+              contactId: null,
+              userId: currentUser.id,
+              items: [{ id: tempId(), name: "", price: "", note: "" }],
+            },
+          ]
+        : prev
+    );
+  }, [currentUser]);
+
+  useEffect(() => {
+    async function fetchContacts() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("name");
+
+      if (!error && data) setContacts(data);
+    }
+
+    fetchContacts();
   }, []);
 
   // ── Bill name editing ──
@@ -61,9 +107,35 @@ export default function NewBillPage() {
   }
 
   // ── Person management ──
-  function addPerson() {
+  function openAddPersonSheet() {
     haptic.light();
-    setPersons((prev) => [...prev, emptyPerson()]);
+    setAddPersonSheetOpen(true);
+  }
+
+  function handleAddPersonConfirm({ contacts: selectedContacts, newNames, includeYou }) {
+    let newPerson;
+
+    if (includeYou && currentUser) {
+      newPerson = { name: currentUser.name, contactId: null, userId: currentUser.id };
+    } else if (selectedContacts.length > 0) {
+      newPerson = { name: selectedContacts[0].name, contactId: selectedContacts[0].id, userId: null };
+    } else if (newNames.length > 0) {
+      newPerson = { name: newNames[0], contactId: null, userId: null };
+    } else {
+      setAddPersonSheetOpen(false);
+      return;
+    }
+
+    haptic.medium();
+    setPersons((prev) => [
+      ...prev,
+      {
+        id: tempId(),
+        ...newPerson,
+        items: [{ id: tempId(), name: "", price: "", note: "" }],
+      },
+    ]);
+    setAddPersonSheetOpen(false);
   }
 
   function removePerson(personId) {
@@ -71,10 +143,62 @@ export default function NewBillPage() {
     setPersons((prev) => prev.filter((p) => p.id !== personId));
   }
 
-  function updatePersonName(personId, name) {
-    setPersons((prev) =>
-      prev.map((p) => (p.id === personId ? { ...p, name } : p))
-    );
+  // ── Shared item management ──
+  function openSharedItemSheet() {
+    haptic.light();
+    setSharedItemSheetOpen(true);
+  }
+
+  function handleAddSharedItem({
+    name,
+    price,
+    existingPersonIds,
+    contacts: selectedContacts,
+    newNames,
+    includeYou,
+  }) {
+    const newPersonsFromContacts = selectedContacts.map((contact) => ({
+      id: tempId(),
+      name: contact.name,
+      contactId: contact.id,
+      userId: null,
+      items: [{ id: tempId(), name: "", price: "", note: "" }],
+    }));
+    const newPersonsFromNames = newNames.map((newName) => ({
+      id: tempId(),
+      name: newName,
+      contactId: null,
+      userId: null,
+      items: [{ id: tempId(), name: "", price: "", note: "" }],
+    }));
+    const newYouPerson =
+      includeYou && currentUser
+        ? [
+            {
+              id: tempId(),
+              name: currentUser.name,
+              contactId: null,
+              userId: currentUser.id,
+              items: [{ id: tempId(), name: "", price: "", note: "" }],
+            },
+          ]
+        : [];
+    const newPersons = [...newPersonsFromContacts, ...newPersonsFromNames, ...newYouPerson];
+
+    const personIds = [...existingPersonIds, ...newPersons.map((p) => p.id)];
+
+    if (newPersons.length > 0) {
+      setPersons((prev) => [...prev, ...newPersons]);
+    }
+
+    haptic.medium();
+    setSharedItems((prev) => [...prev, { id: tempId(), name, price, personIds }]);
+    setSharedItemSheetOpen(false);
+  }
+
+  function removeSharedItem(itemId) {
+    haptic.light();
+    setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
   }
 
   // ── Item management ──
@@ -126,18 +250,48 @@ export default function NewBillPage() {
     );
   }
 
-  const grandTotal = persons.reduce(
-    (sum, p) => sum + personSubtotal(p),
-    0
-  );
+  const sharedItemsTotal = sharedItems.reduce((sum, i) => sum + i.price, 0);
+  const grandTotal =
+    persons.reduce((sum, p) => sum + personSubtotal(p), 0) + sharedItemsTotal;
 
-  // ── Validation — at least 1 person with at least 1 named, priced item ──
-  const hasValidItem = persons.some((p) =>
-    p.items.some((i) => i.name.trim() && parseFloat(i.price) > 0)
+  const availableContacts = contacts.filter(
+    (contact) => !persons.some((p) => p.contactId === contact.id)
   );
+  const showYou =
+    Boolean(currentUser) && !persons.some((p) => p.userId === currentUser.id);
+
+  // A person with no individual items is still fine if they're a
+  // participant in a shared item — otherwise item_shares would have nothing
+  // to point at for them. Same set used by handleConfirmSave below, so the
+  // "does this person have something assigned" rule lives in one place.
+  const personIdsInSharedItems = new Set(sharedItems.flatMap((i) => i.personIds));
+  function personHasNoItems(person) {
+    return (
+      !person.items.some((i) => i.name.trim() && parseFloat(i.price) > 0) &&
+      !personIdsInSharedItems.has(person.id)
+    );
+  }
+
+  // ── Validation — at least 1 person with at least 1 named, priced item, or
+  // at least 1 shared item (which is always valid — name/price/participants
+  // are all required to confirm the Add Shared Item sheet) — and every
+  // person on the bill has something assigned to them ──
+  const hasValidItem =
+    (persons.some((p) =>
+      p.items.some((i) => i.name.trim() && parseFloat(i.price) > 0)
+    ) ||
+      sharedItems.length > 0) &&
+    !persons.some(personHasNoItems);
 
   // ── Save flow ──
   function handleReviewTap() {
+    const personWithNoItems = persons.find(personHasNoItems);
+    if (personWithNoItems) {
+      toast.error(
+        `${getPersonDisplayName(personWithNoItems, currentUser?.id)} has no items assigned — remove them or assign something first.`
+      );
+      return;
+    }
     if (!hasValidItem) {
       toast.error("Add at least one item before continuing.");
       return;
@@ -175,29 +329,76 @@ export default function NewBillPage() {
       return;
     }
 
-    // 2. Create persons + their items
+    // 2. Create persons + their individual items. A person with no valid
+    // individual items is still created if they're a participant in a
+    // shared item below — otherwise item_shares would have nothing to
+    // point at for them. (personIdsInSharedItems computed above, alongside
+    // hasValidItem.)
+    const personIdMap = new Map();
+
     for (const person of persons) {
       const validItems = person.items.filter(
         (i) => i.name.trim() && parseFloat(i.price) > 0
       );
-      if (!person.name.trim() || validItems.length === 0) continue;
+      const hasSharedParticipation = personIdsInSharedItems.has(person.id);
+      if (!person.name.trim() || (validItems.length === 0 && !hasSharedParticipation))
+        continue;
 
       const { data: createdPerson, error: personError } = await supabase
         .from("persons")
-        .insert({ name: person.name.trim(), bill_id: bill.id })
+        .insert({
+          name: person.name.trim(),
+          bill_id: bill.id,
+          contact_id: person.contactId ?? null,
+          user_id: person.userId ?? null,
+        })
         .select()
         .single();
 
       if (personError || !createdPerson) continue;
+      personIdMap.set(person.id, createdPerson.id);
 
-      const itemsToInsert = validItems.map((i) => ({
-        name: i.name.trim(),
-        price: parseFloat(i.price),
-        note: i.note?.trim() || null,
-        person_id: createdPerson.id,
-      }));
+      if (validItems.length > 0) {
+        const itemsToInsert = validItems.map((i) => ({
+          name: i.name.trim(),
+          price: parseFloat(i.price),
+          note: i.note?.trim() || null,
+          person_id: createdPerson.id,
+        }));
 
-      await supabase.from("items").insert(itemsToInsert);
+        await supabase.from("items").insert(itemsToInsert);
+      }
+    }
+
+    // 3. Create shared items — person_id gets the first assignee (same RLS
+    // requirement as the scan flow), item_shares records every assignee.
+    for (const sharedItem of sharedItems) {
+      const realAssigneeIds = sharedItem.personIds
+        .map((localId) => personIdMap.get(localId))
+        .filter(Boolean);
+
+      if (realAssigneeIds.length === 0) continue;
+
+      const { data: createdItem, error: itemError } = await supabase
+        .from("items")
+        .insert({
+          name: sharedItem.name,
+          price: sharedItem.price,
+          person_id: realAssigneeIds[0],
+        })
+        .select()
+        .single();
+
+      if (itemError || !createdItem) continue;
+
+      if (realAssigneeIds.length > 1) {
+        await supabase.from("item_shares").insert(
+          realAssigneeIds.map((personId) => ({
+            item_id: createdItem.id,
+            person_id: personId,
+          }))
+        );
+      }
     }
 
     haptic.success();
@@ -207,8 +408,12 @@ export default function NewBillPage() {
 
   const [sheetMode, setSheetMode] = useState(null); // 'review' | 'abandon' | null
 
+  // The default YOU card always has a name, so name presence no longer
+  // signals user-entered progress — more than the single default person, or
+  // an actual item typed, does.
   const hasUnsavedProgress =
-    persons.some((p) => p.name.trim()) ||
+    persons.length > 1 ||
+    sharedItems.length > 0 ||
     persons.some((p) => p.items.some((i) => i.name.trim()));
 
   function handleCancelTap() {
@@ -263,7 +468,7 @@ export default function NewBillPage() {
             <div className="max-w-xl mx-auto w-full px-4 flex flex-col gap-4 pb-32 -mt-5">
               {/* Person cards */}
               <AnimatePresence initial={false}>
-                {persons.map((person, idx) => (
+                {persons.map((person) => (
                   <motion.div
                     key={person.id}
                     initial={{ opacity: 0, y: 12 }}
@@ -276,8 +481,8 @@ export default function NewBillPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <UserCircleIcon className="w-5 text-orange shrink-0" />
-                        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-                          Person {idx + 1}
+                        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide truncate">
+                          {getPersonDisplayName(person, currentUser?.id)}
                         </p>
                       </div>
                       {persons.length > 1 && (
@@ -288,21 +493,6 @@ export default function NewBillPage() {
                           <TrashIcon className="w-4 text-text-secondary/50" />
                         </button>
                       )}
-                    </div>
-
-                    {/* Name input */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-text-secondary">
-                        Name
-                      </label>
-                      <input
-                        value={person.name}
-                        onChange={(e) =>
-                          updatePersonName(person.id, e.target.value)
-                        }
-                        placeholder="e.g. Kent"
-                        className="border border-black/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange/40 transition-colors duration-150"
-                      />
                     </div>
 
                     {/* Items */}
@@ -396,7 +586,9 @@ export default function NewBillPage() {
                     {/* Subtotal */}
                     <div className="flex justify-between items-center pt-1 border-t border-dashed border-black/10">
                       <p className="text-xs text-text-secondary">
-                        {person.name.trim() || "This person"}'s total
+                        {getPersonDisplayName(person, currentUser?.id).trim() ||
+                          "This person"}
+                        's total
                       </p>
                       <p className="font-bold text-orange text-sm">
                         ₱{personSubtotal(person).toFixed(2)}
@@ -406,13 +598,76 @@ export default function NewBillPage() {
                 ))}
               </AnimatePresence>
 
+              {/* Shared items */}
+              {sharedItems.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 flex flex-col gap-3">
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                    Shared items
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <AnimatePresence initial={false}>
+                      {sharedItems.map((item) => {
+                        const names = item.personIds
+                          .map((id) => {
+                            const person = persons.find((p) => p.id === id);
+                            return person
+                              ? getPersonDisplayName(person, currentUser?.id)
+                              : null;
+                          })
+                          .filter(Boolean);
+
+                        return (
+                          <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5"
+                          >
+                            <div className="flex flex-col min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {item.name}
+                              </p>
+                              {names.length > 0 && (
+                                <p className="text-xs text-text-secondary truncate">
+                                  Split with {names.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className="text-sm font-semibold text-orange">
+                                ₱{item.price.toFixed(2)}
+                              </p>
+                              <button onClick={() => removeSharedItem(item.id)}>
+                                <TrashIcon className="w-3.5 text-text-secondary/40" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+
               {/* Add person */}
               <button
-                onClick={addPerson}
+                onClick={openAddPersonSheet}
                 className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95"
               >
                 <UserCircleIcon className="w-4" />
                 Add another person
+              </button>
+
+              {/* Add shared item */}
+              <button
+                onClick={openSharedItemSheet}
+                disabled={persons.length === 0}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <PlusIcon className="w-4" />
+                Add shared item
               </button>
             </div>
           </div>
@@ -482,7 +737,7 @@ export default function NewBillPage() {
                           Double-check before sharing
                         </p>
                         <p className="text-text-secondary text-sm max-w-60">
-                          {persons.filter((p) => p.name.trim()).length} people
+                          {persons.length} people
                           · ₱{grandTotal.toFixed(2)} total. Make sure names
                           and amounts are correct.
                         </p>
@@ -556,6 +811,28 @@ export default function NewBillPage() {
           </AnimatePresence>,
           document.body
         )}
+
+      {addPersonSheetOpen && (
+        <AddPersonSheet
+          persons={withDisplayNames(persons, currentUser?.id)}
+          contacts={availableContacts}
+          currentUser={currentUser}
+          showYou={showYou}
+          onAdd={handleAddPersonConfirm}
+          onClose={() => setAddPersonSheetOpen(false)}
+        />
+      )}
+
+      {sharedItemSheetOpen && (
+        <AddSharedItemSheet
+          persons={withDisplayNames(persons, currentUser?.id)}
+          contacts={availableContacts}
+          currentUser={currentUser}
+          showYou={showYou}
+          onAdd={handleAddSharedItem}
+          onClose={() => setSharedItemSheetOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -239,7 +239,7 @@ export default function SettingsPage() {
               </div>
 
               {/* ── Preferences ── */}
-              <div className="flex flex-col gap-2">
+              {/* <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide px-1">
                   Preferences
                 </p>
@@ -264,7 +264,7 @@ export default function SettingsPage() {
                     <Toggle enabled={darkModeEnabled} onToggle={toggleDarkMode} />
                   </div>
                 </Card>
-              </div>
+              </div> */}
 
               {/* ── About & Support ── */}
               <div className="flex flex-col gap-2">

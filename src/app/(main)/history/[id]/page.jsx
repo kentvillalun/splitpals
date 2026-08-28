@@ -13,6 +13,7 @@ import { haptic } from "@/app/lib/haptic";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeftIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Receipt } from "@/app/components/ui/Receipt";
+import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import { toast } from "sonner";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -21,6 +22,7 @@ import Image from "next/image";
 export default function HistoryDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [mounted, setMounted] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,7 +40,7 @@ export default function HistoryDetailPage() {
   } = useFetch({
     table: "bills",
     filters: { id },
-    select: `id, name, created_at, persons (id, name, is_paid, items(id, name, price))`,
+    select: `id, name, created_at, persons (id, name, is_paid, user_id, items(id, name, price))`,
   });
 
   const bill = bills?.[0];
@@ -91,7 +93,7 @@ export default function HistoryDetailPage() {
   return (
     <>
       <DesktopGuard />
-      <Page className="bg-backgroud">
+      <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5 relative">
             {/* Header */}
@@ -128,7 +130,9 @@ export default function HistoryDetailPage() {
               </div>
             </div>
 
-            <div className="max-w-xl mx-auto w-full px-4 pb-4 absolute top-24">
+            <div className="h-19"></div>
+
+            <div className="max-w-xl mx-auto w-full px-4 pb-4 top-24">
               {isLoading ? (
                 <div className="bg-white rounded-3xl p-5 flex flex-col gap-3">
                   <Skeleton height={20} width={120} className="mx-auto" />
@@ -173,6 +177,7 @@ export default function HistoryDetailPage() {
                   billName={bill.name}
                   date={formatDate(bill.created_at)}
                   persons={bill.persons ?? []}
+                  currentUserId={currentUser?.id}
                   onTogglePaid={handleTogglePaid}
                 />
               )}

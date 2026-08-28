@@ -13,11 +13,11 @@ export const BottomSheet = ({ children, setSheetOpen }) => {
           transition: { duration: 0.15, ease: "easeIn" },
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="fixed inset-0 z-40 bg-black/40 font-body"
+        className="fixed inset-0 z-40 bg-black/40 font-body lg:hidden"
       />
       <motion.div
         key={"content"}
-        className="bg-white h-auto w-full flex flex-col items-center justify-between fixed bottom-0 rounded-t-4xl gap-6 pt-4 px-5  pb-17 z-50"
+        className="bg-white h-auto w-full flex flex-col items-center justify-between fixed bottom-0 rounded-t-4xl gap-6 pt-4 px-5  pb-17 z-50 lg:hidden"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{

@@ -10,6 +10,7 @@ import { formatDate } from "@/app/lib/formatDate";
 import { supabase } from "@/app/lib/supabase";
 import { haptic } from "@/app/lib/haptic";
 import { Receipt } from "@/app/components/ui/Receipt";
+import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Image from "next/image";
@@ -26,6 +27,7 @@ function ReceiptPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const billId = searchParams.get("id");
+  const currentUser = useCurrentUser();
 
   const {
     data: bills,
@@ -36,7 +38,7 @@ function ReceiptPageContent() {
   } = useFetch({
     table: "bills",
     filters: billId ? { id: billId } : {},
-    select: `id, name, created_at, persons (id, name, is_paid, items(id, name, price))`,
+    select: `id, name, created_at, persons (id, name, is_paid, user_id, items(id, name, price))`,
   });
 
   const bill = bills?.[0];
@@ -72,7 +74,7 @@ function ReceiptPageContent() {
     return (
       <>
         <DesktopGuard />
-        <Page className="bg-backgroud">
+        <Page className="bg-backgroud lg:hidden">
           <PageContent className="px-4 flex flex-col items-center text-center py-20 gap-2">
             <p className="font-bold text-text-primary text-base">
               No bill specified
@@ -95,7 +97,7 @@ function ReceiptPageContent() {
   return (
     <>
       <DesktopGuard />
-      <Page className="bg-backgroud">
+      <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
             {/* Header — fixed at top */}
@@ -171,6 +173,7 @@ function ReceiptPageContent() {
                     billName={bill.name}
                     date={formatDate(bill.created_at)}
                     persons={bill.persons ?? []}
+                    currentUserId={currentUser?.id}
                     onTogglePaid={handleTogglePaid}
                   />
                 </>
