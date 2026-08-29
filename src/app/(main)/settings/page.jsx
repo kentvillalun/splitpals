@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -185,6 +185,11 @@ export default function SettingsPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
@@ -409,6 +414,7 @@ export default function SettingsPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {/* Delete account confirmation — same bottom-sheet pattern as the
           "Abandon this bill?" / "Discard changes?" sheets on the bill pages */}

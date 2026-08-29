@@ -6,7 +6,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { Card } from "@/app/components/ui/Card";
 import { formatDate } from "@/app/lib/formatDate";
 import { useFetch } from "@/app/lib/hooks/useFetch";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Skeleton from "react-loading-skeleton";
@@ -65,6 +65,11 @@ export default function BillsPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
@@ -73,7 +78,7 @@ export default function BillsPage() {
               className="fixed top-0 left-0 right-0 z-50 flex flex-col"
             >
               {/* Orange gradient hero */}
-              <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl">
+              <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl fixed">
                 <div className="max-w-xl mx-auto flex flex-col gap-4">
                   {/* Back button + page name */}
                   <div className="flex items-center justify-between">
@@ -100,9 +105,10 @@ export default function BillsPage() {
                   </div>
                 </div>
               </div>
+              <div className="h-37 bg-backgroud"></div>
 
               {/* Filter pills */}
-              <div className="bg-backgroud w-full px-4 py-3">
+              <div className="bg-backgroud w-full px-4 py-3 ">
                 <div className="max-w-xl mx-auto flex gap-2">
                   {["all", "unsettled", "settled"].map((f) => (
                     <button
@@ -219,6 +225,7 @@ export default function BillsPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
     </>
   );
 }

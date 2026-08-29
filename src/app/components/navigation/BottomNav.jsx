@@ -16,6 +16,8 @@ import { useRouter } from "next/navigation";
 import { haptic } from "@/app/lib/haptic";
 import { useNewBillSheet } from "@/app/components/NewBillSheetProvider";
 
+const TAB_ROUTES = ["/dashboard", "/history", "/settings"];
+
 export const BottomNav = () => {
   const pathName = usePathname();
   const router = useRouter();
@@ -25,15 +27,28 @@ export const BottomNav = () => {
   const inBills = pathName.startsWith("/history");
   const inSettings = pathName.startsWith("/settings");
 
+  function goToTab(path) {
+    haptic.light();
+
+    const currentIndex = TAB_ROUTES.findIndex((route) =>
+      pathName.startsWith(route)
+    );
+    const targetIndex = TAB_ROUTES.indexOf(path);
+
+    if (targetIndex === currentIndex) return;
+
+    const transitionTypes = [
+      targetIndex > currentIndex ? "nav-forward" : "nav-back",
+    ];
+    router.push(path, { transitionTypes });
+  }
+
   return (
-    <div className="lg:hidden flex flex-row gap-4 items-center min-w-screen fixed bottom-6 h-auto px-4 font-body font-medium mx-auto justify-center">
+    <div className="lg:hidden flex flex-row gap-4 items-center min-w-screen fixed bottom-6 h-auto px-4 font-body font-medium mx-auto justify-center" style={{ viewTransitionName: "bottom-nav"}}>
       <div className="grid flex-1 grid-cols-3 rounded-[18px] bg-white h-auto items-center px-1.5 py-2.5 new-border text-[10px] gap-1 md:max-w-lg">
         <button
           className={`flex flex-col items-center rounded-2xl py-1 transition-colors duration-200 ${inDashboard ? "bg-primary/10" : ""}`}
-          onClick={() => {
-            haptic.light();
-            router.push("/dashboard");
-          }}
+          onClick={() => goToTab("/dashboard")}
         >
           {inDashboard ? (
             <Squares2X2IconSolid className="w-5 text-primary" />
@@ -48,10 +63,7 @@ export const BottomNav = () => {
         </button>
         <button
           className={`flex flex-col items-center rounded-2xl py-1 transition-color duration-200  ${inBills ? "bg-primary/10" : ""}`}
-          onClick={() => {
-            haptic.light();
-            router.push("/history");
-          }}
+          onClick={() => goToTab("/history")}
         >
           {inBills ? (
             <BanknotesIconSolid className="w-5 text-primary" />
@@ -66,10 +78,7 @@ export const BottomNav = () => {
         </button>
         <button
           className={`flex flex-col items-center rounded-2xl py-1 transition-color duration-200  ${inSettings ? "bg-primary/10" : ""}`}
-          onClick={() => {
-            haptic.light();
-            router.push("/settings");
-          }}
+          onClick={() => goToTab("/settings")}
         >
           {inSettings ? (
             <Cog6ToothIconSolid className="w-5 text-primary" />

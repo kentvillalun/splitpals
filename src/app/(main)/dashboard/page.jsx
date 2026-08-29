@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
@@ -81,6 +81,11 @@ export default function DashboardPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0 pt-10">
           <div className="flex flex-col w-full gap-5.5">
@@ -240,6 +245,7 @@ export default function DashboardPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
     </>
   );
 }
