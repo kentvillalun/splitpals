@@ -9,7 +9,7 @@ import { ReceiptCaptureProvider } from "../components/ReceiptCaptureProvider";
 export default function MainLayout({ children }) {
   const pathname = usePathname();
 
-  const paths = ["/bills/new", "/history/", "/receipt", "/bills/edit"];
+  const paths = ["/bills/new", "/history/", "/receipt", "/bills/edit", "/settings/support"];
 
   const hideNav = paths.some((paths) => pathname.startsWith(paths));
 

@@ -35,7 +35,6 @@ export default function SetupPage() {
   }, []);
 
   const handleContinue = async () => {
-   
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -44,7 +43,6 @@ export default function SetupPage() {
       })
       .eq("id", user.id);
 
-   
     if (error) {
       toast.error("Something went wrong. Please try again.");
       return;
@@ -85,17 +83,12 @@ export default function SetupPage() {
                   loading="eager"
                 />
 
-                <div className="max-w-52 aspect-square w-full absolute -right-4 -top-5">
-                  <Image
-                    src={"/corgis/corgi-bubble.svg"}
-                    alt="A corgi dog laying down"
-                    fill
-                    priority
-                    loading="eager"
-                  />
-                  <p className="absolute text-sm top-22 right-7 text-text-primary font-body">
-                    What should I call you?
-                  </p>
+                <div className="aspect-square w-full absolute -right-4 top-10">
+                  <div className="flex flex-col items-start bg-white new-border absolute p-4 h-13 z-40 left-32 right-4 top-3.5 rounded-t-3xl rounded-br-3xl rounded-bl-sm">
+                    <p className="absolute text-sm text-text-primary font-body font-semibold">
+                      What should I call you?
+                    </p>
+                  </div>
                 </div>
               </div>
               <Card className="min-w-75 mx-6 md:max-w-120 md:mx-auto">

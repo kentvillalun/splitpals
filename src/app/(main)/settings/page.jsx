@@ -25,6 +25,7 @@ import {
   ArrowLeftIcon,
   ChevronRightIcon,
   TrashIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import Skeleton from "react-loading-skeleton";
@@ -182,7 +183,7 @@ export default function SettingsPage() {
         <PageContent className="px-0">
           <div className="flex flex-col w-full gap-5">
             {/* Header */}
-            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-50">
+            <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed z-30">
               <div className="max-w-xl mx-auto flex items-center justify-between">
                 <button
                   onClick={() => router.back()}
@@ -387,6 +388,23 @@ export default function SettingsPage() {
                       <ShieldCheckIcon className="w-5 text-text-secondary" />
                       <p className="text-sm font-medium text-text-primary">
                         Privacy policy
+                      </p>
+                    </div>
+                    <ChevronRightIcon className="w-4 text-text-secondary/50" />
+                  </button>
+
+                  <button
+                    className={menuItemClass}
+                    onClick={() =>
+                      router.push("/settings/support", {
+                        transitionTypes: ["nav-forward"],
+                      })
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <HeartIcon className="w-5 text-text-secondary" />
+                      <p className="text-sm font-medium text-text-primary">
+                        Support SplitPals
                       </p>
                     </div>
                     <ChevronRightIcon className="w-4 text-text-secondary/50" />

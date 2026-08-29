@@ -75,7 +75,7 @@ export default function BillsPage() {
           <div className="flex flex-col w-full gap-5">
             <div
               ref={headerRef}
-              className="fixed top-0 left-0 right-0 z-50 flex flex-col"
+              className="fixed top-0 left-0 right-0 z-40 flex flex-col"
             >
               {/* Orange gradient hero */}
               <div className="gradient-button w-full px-4 pt-5 pb-7 rounded-b-3xl fixed">
