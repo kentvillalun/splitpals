@@ -6,7 +6,7 @@ import { Card } from "@/app/components/ui/Card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { PageTransition } from "@/app/components/PageTransition";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -46,12 +46,10 @@ export default function SetupPage() {
 
    
     if (error) {
-      haptic.error();
       toast.error("Something went wrong. Please try again.");
       return;
     }
 
-    haptic.success();
     router.push("/ready");
   };
 
@@ -116,11 +114,9 @@ export default function SetupPage() {
                   </div>
                   <div className="flex items-end w-full justify-end">
                     <button
+                      ref={hapticTrigger}
                       className="gradient-button px-6 py-2 rounded-lg text-white font-medium text-sm"
-                      onClick={() => {
-                        haptic.medium();
-                        handleContinue();
-                      }}
+                      onClick={handleContinue}
                     >
                       Continue
                     </button>

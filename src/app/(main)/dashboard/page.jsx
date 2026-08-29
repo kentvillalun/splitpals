@@ -205,7 +205,11 @@ export default function DashboardPage() {
                       <Card
                         key={b.id}
                         className="p-0!"
-                        handleOnClick={() => router.push(`/history/${b.id}`)}
+                        handleOnClick={() =>
+                          router.push(`/history/${b.id}`, {
+                            transitionTypes: ["nav-forward"],
+                          })
+                        }
                       >
                         <div className="flex flex-row justify-between border-b border-gray-100 p-3">
                           <div className="flex flex-col">

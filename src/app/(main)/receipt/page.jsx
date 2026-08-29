@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, ViewTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
@@ -8,7 +8,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { useFetch } from "@/app/lib/hooks/useFetch";
 import { formatDate } from "@/app/lib/formatDate";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { Receipt } from "@/app/components/ui/Receipt";
 import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import Skeleton from "react-loading-skeleton";
@@ -66,8 +66,7 @@ function ReceiptPageContent() {
   }
 
   function handleDone() {
-    haptic.medium();
-    router.push("/dashboard");
+    router.push("/dashboard", { transitionTypes: ["nav-back"] });
   }
 
   if (!billId) {
@@ -84,7 +83,9 @@ function ReceiptPageContent() {
             </p>
             <button
               className="text-sm font-semibold text-primary mt-1"
-              onClick={() => router.push("/dashboard")}
+              onClick={() =>
+                router.push("/dashboard", { transitionTypes: ["nav-back"] })
+              }
             >
               Back to dashboard
             </button>
@@ -97,6 +98,11 @@ function ReceiptPageContent() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
@@ -107,6 +113,7 @@ function ReceiptPageContent() {
                   {isLoading ? "Loading..." : bill?.name ?? "Bill"}
                 </p>
                 <button
+                  ref={hapticTrigger}
                   onClick={handleDone}
                   className="px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-semibold hover:bg-white/25 transition-colors duration-150 shrink-0"
                 >
@@ -159,7 +166,9 @@ function ReceiptPageContent() {
                   </p>
                   <button
                     className="text-sm font-semibold text-primary mt-1"
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() =>
+                      router.push("/dashboard", { transitionTypes: ["nav-back"] })
+                    }
                   >
                     Back to dashboard
                   </button>
@@ -182,6 +191,7 @@ function ReceiptPageContent() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
     </>
   );
 }

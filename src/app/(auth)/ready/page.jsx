@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 
 export default function ReadyPage() {
   const [name, setName] = useState("");
@@ -83,21 +83,17 @@ export default function ReadyPage() {
             transition={{ delay: 0.25 }}
           >
             <button
+              ref={hapticTrigger}
               className=" w-full gradient-button py-3.5 px-4 gap-2 rounded-2xl disabled:opacity-25 disabled:pointer-events-none hover:cursor-pointer transition-all active:scale-95 duration-200 ease-in-out hover:opacity-90 text-white font-semibold"
-              onClick={() => {
-                haptic.medium();
-                router.push("/bills/new");
-              }}
+              onClick={() => router.push("/bills/new")}
             >
               Split the bill
             </button>
 
             <button
+              ref={hapticTrigger}
               className="font-medium text-text-primary text-sm"
-              onClick={() => {
-                haptic.light();
-                router.push("/dashboard");
-              }}
+              onClick={() => router.push("/dashboard")}
             >
               I want to explore first →
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +11,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { Card } from "@/app/components/ui/Card";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import {
   MagnifyingGlassIcon,
   PencilIcon,
@@ -72,7 +72,6 @@ export default function ContactsPage() {
 
   // ── Rename ──
   function startEditingContact(contact) {
-    haptic.light();
     setEditingContactId(contact.id);
     setDraftName(contact.name);
   }
@@ -91,13 +90,11 @@ export default function ContactsPage() {
       .eq("id", contactId);
 
     if (error) {
-      haptic.error();
       toast.error("Couldn't update that contact.");
       setIsSavingName(false);
       return;
     }
 
-    haptic.success();
     setContacts((prev) =>
       prev
         .map((c) => (c.id === contactId ? { ...c, name: trimmed } : c))
@@ -109,7 +106,6 @@ export default function ContactsPage() {
 
   // ── Delete ──
   function openDeleteConfirm(contact) {
-    haptic.light();
     setDeleteTarget(contact);
     setDeleteConfirmOpen(true);
   }
@@ -118,7 +114,6 @@ export default function ContactsPage() {
     if (!deleteTarget) return;
 
     setIsDeleting(true);
-    haptic.medium();
 
     const { error } = await supabase
       .from("contacts")
@@ -126,13 +121,11 @@ export default function ContactsPage() {
       .eq("id", deleteTarget.id);
 
     if (error) {
-      haptic.error();
       toast.error("Couldn't delete that contact. Please try again.");
       setIsDeleting(false);
       return;
     }
 
-    haptic.success();
     setContacts((prev) => prev.filter((c) => c.id !== deleteTarget.id));
     setIsDeleting(false);
     setDeleteConfirmOpen(false);
@@ -142,10 +135,19 @@ export default function ContactsPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
-            <PageHeader onBack={() => router.back()}>
+            <PageHeader
+              onBack={() =>
+                router.push("/settings", { transitionTypes: ["nav-back"] })
+              }
+            >
               <p className="text-base font-semibold text-white truncate flex-1 text-center">
                 Contacts
               </p>
@@ -238,10 +240,10 @@ export default function ContactsPage() {
                                 {contact.name}
                               </p>
                               <div className="flex items-center gap-3 shrink-0">
-                                <button onClick={() => startEditingContact(contact)}>
+                                <button ref={hapticTrigger} onClick={() => startEditingContact(contact)}>
                                   <PencilIcon className="w-4 text-text-secondary/60" />
                                 </button>
-                                <button onClick={() => openDeleteConfirm(contact)}>
+                                <button ref={hapticTrigger} onClick={() => openDeleteConfirm(contact)}>
                                   <TrashIcon className="w-4 text-text-secondary/60" />
                                 </button>
                               </div>
@@ -262,6 +264,7 @@ export default function ContactsPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {/* Delete contact confirmation — same bottom-sheet pattern used for
           "Delete account?" / "Abandon this bill?" elsewhere */}
@@ -327,7 +330,6 @@ export default function ContactsPage() {
                       className="text-text-secondary font-body text-xs"
                       disabled={isDeleting}
                       onClick={() => {
-                        haptic.light();
                         setDeleteConfirmOpen(false);
                       }}
                     >

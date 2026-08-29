@@ -6,7 +6,7 @@ import { PageTransition } from "@/app/components/PageTransition";
 import Image from "next/image";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { supabase } from "@/app/lib/supabase";
 import { toast } from "sonner";
 
@@ -50,10 +50,9 @@ export default function SignupPage() {
 
               <div className="flex flex-col gap-3 w-full items-center max-w-xl">
                 <button
+                  ref={hapticTrigger}
                   className="flex flex-row items-center justify-center w-full gradient-button-black hover:cursor-pointer transition-all duration-200 ease-in-out hover:opacity-90 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                   onClick={async () => {
-                    haptic.medium();
-
                     const { error } = await supabase.auth.signInWithOAuth({
                       provider: "google",
                       options: {
@@ -62,7 +61,6 @@ export default function SignupPage() {
                     });
 
                     if (error) {
-                      haptic.error();
                       toast.error(
                         "Something went wrong. Please try again.",
                       );

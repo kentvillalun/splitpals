@@ -9,7 +9,7 @@ import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { Card } from "@/app/components/ui/Card";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import {
   UserCircleIcon,
   UserGroupIcon,
@@ -93,7 +93,6 @@ export default function SettingsPage() {
   }, []);
 
   function startEditingName() {
-    haptic.light();
     setDraftName(name);
     setIsEditingName(true);
   }
@@ -112,13 +111,11 @@ export default function SettingsPage() {
       .eq("id", user.id);
 
     if (error) {
-      haptic.error();
       toast.error("Couldn't update your name.");
       setIsSavingName(false);
       return;
     }
 
-    haptic.success();
     setName(trimmed);
     setIsEditingName(false);
     setIsSavingName(false);
@@ -126,34 +123,28 @@ export default function SettingsPage() {
 
   async function handleSignOut() {
     setSigningOut(true);
-    haptic.medium();
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      haptic.error();
       toast.error("Couldn't sign out. Please try again.");
       setSigningOut(false);
       return;
     }
 
-    haptic.success();
     router.replace("../signup");
   }
 
   function openDeleteConfirm() {
-    haptic.light();
     setDeleteConfirmOpen(true);
   }
 
   async function handleDeleteAccount() {
     setIsDeleting(true);
-    haptic.medium();
 
     const response = await fetch("/api/delete-account", { method: "POST" });
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      haptic.error();
       toast.error(result.error || "Couldn't delete your account. Please try again.");
       setIsDeleting(false);
       return;
@@ -163,18 +154,15 @@ export default function SettingsPage() {
     // server-side — this just clears the now-invalid local session.
     await supabase.auth.signOut();
 
-    haptic.success();
     router.replace("../signup");
   }
 
   function toggleNotifications() {
-    haptic.light();
     setNotifEnabled((prev) => !prev);
     // NOTE: UI-only for now — no push subscription wiring yet
   }
 
   function toggleDarkMode() {
-    haptic.light();
     setDarkModeEnabled((prev) => !prev);
     // NOTE: UI-only for now — no theme system wired up yet
   }
@@ -251,7 +239,7 @@ export default function SettingsPage() {
                         <p className="font-semibold text-text-primary truncate">
                           {name || "Your name"}
                         </p>
-                        <button onClick={startEditingName} className="shrink-0">
+                        <button ref={hapticTrigger} onClick={startEditingName} className="shrink-0">
                           <PencilIcon className="w-3.5 text-text-secondary/60" />
                         </button>
                       </div>
@@ -265,7 +253,11 @@ export default function SettingsPage() {
                 <Card className="p-0! divide-y divide-black/5">
                   <button
                     className={menuItemClass}
-                    onClick={() => router.push("/settings/contacts")}
+                    onClick={() =>
+                      router.push("/settings/contacts", {
+                        transitionTypes: ["nav-forward"],
+                      })
+                    }
                   >
                     <div className="flex items-center gap-3">
                       <UserGroupIcon className="w-5 text-text-secondary" />
@@ -302,7 +294,11 @@ export default function SettingsPage() {
                 <Card className="p-0!">
                   <button
                     className={menuItemClass}
-                    onClick={() => router.push("/settings/faqs")}
+                    onClick={() =>
+                      router.push("/settings/faqs", {
+                        transitionTypes: ["nav-forward"],
+                      })
+                    }
                   >
                     <div className="flex items-center gap-3">
                       <QuestionMarkCircleIcon className="w-5 text-text-secondary" />
@@ -364,7 +360,11 @@ export default function SettingsPage() {
 
                   <button
                     className={menuItemClass}
-                    onClick={() => router.push("../terms")}
+                    onClick={() =>
+                      router.push("../terms", {
+                        transitionTypes: ["nav-forward"],
+                      })
+                    }
                   >
                     <div className="flex items-center gap-3">
                       <DocumentTextIcon className="w-5 text-text-secondary" />
@@ -377,7 +377,11 @@ export default function SettingsPage() {
 
                   <button
                     className={menuItemClass}
-                    onClick={() => router.push("../privacy")}
+                    onClick={() =>
+                      router.push("../privacy", {
+                        transitionTypes: ["nav-forward"],
+                      })
+                    }
                   >
                     <div className="flex items-center gap-3">
                       <ShieldCheckIcon className="w-5 text-text-secondary" />
@@ -396,7 +400,7 @@ export default function SettingsPage() {
                   Danger zone
                 </p>
                 <Card className="p-0!">
-                  <button className={menuItemClass} onClick={openDeleteConfirm}>
+                  <button ref={hapticTrigger} className={menuItemClass} onClick={openDeleteConfirm}>
                     <div className="flex items-center gap-3">
                       <TrashIcon className="w-5 text-red-500" />
                       <p className="text-sm font-medium text-red-500">
@@ -480,7 +484,6 @@ export default function SettingsPage() {
                       className="text-text-secondary font-body text-xs"
                       disabled={isDeleting}
                       onClick={() => {
-                        haptic.light();
                         setDeleteConfirmOpen(false);
                       }}
                     >

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 
 export function SelectableRow({ label, selected, onToggle, disabled = false }) {
   if (disabled) {
@@ -18,6 +18,7 @@ export function SelectableRow({ label, selected, onToggle, disabled = false }) {
 
   return (
     <button
+      ref={hapticTrigger}
       type="button"
       onClick={onToggle}
       className={`flex flex-row items-center justify-between w-full text-left rounded-xl p-3 gap-3 border-[1.5px] transition-colors duration-150 ${
@@ -77,14 +78,12 @@ export function PersonPicker({
 
   function togglePerson(id) {
     if (isSingle) return; // already-on-the-bill rows are informational only
-    haptic.light();
     setSelectedPersonIds((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   }
 
   function toggleContact(id) {
-    haptic.light();
     if (isSingle) {
       setSelectedContactIds((prev) => (prev.includes(id) ? [] : [id]));
       setIncludeYou(false);
@@ -97,7 +96,6 @@ export function PersonPicker({
   }
 
   function toggleYou() {
-    haptic.light();
     if (isSingle) {
       setIncludeYou((prev) => {
         const next = !prev;
@@ -118,7 +116,6 @@ export function PersonPicker({
       setDraftName("");
       return;
     }
-    haptic.light();
     if (isSingle) {
       setPendingNewNames([trimmed]);
       setSelectedContactIds([]);
@@ -130,7 +127,6 @@ export function PersonPicker({
   }
 
   function removePendingName(name) {
-    haptic.light();
     setPendingNewNames((prev) => prev.filter((n) => n !== name));
   }
 
@@ -142,7 +138,6 @@ export function PersonPicker({
 
   function handleConfirmTap() {
     if (selectedCount === 0 || disabled) return;
-    haptic.medium();
     onConfirm({
       existingPersonIds: selectedPersonIds,
       contacts: contacts.filter((c) => selectedContactIds.includes(c.id)),
@@ -206,7 +201,7 @@ export function PersonPicker({
                 className="flex items-center gap-1 bg-orange-tint text-orange text-xs font-semibold pl-3 pr-2 py-1 rounded-full"
               >
                 {name}
-                <button onClick={() => removePendingName(name)}>
+                <button ref={hapticTrigger} onClick={() => removePendingName(name)}>
                   <XMarkIcon className="w-3.5 stroke-orange" />
                 </button>
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
@@ -8,7 +8,7 @@ import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { Card } from "@/app/components/ui/Card";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 const FAQS = [
@@ -61,7 +61,6 @@ export default function FaqsPage() {
   const [openIndexes, setOpenIndexes] = useState([]);
 
   function toggle(index) {
-    haptic.light();
     setOpenIndexes((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
@@ -70,10 +69,19 @@ export default function FaqsPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0 pb-30!" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
-            <PageHeader onBack={() => router.back()}>
+            <PageHeader
+              onBack={() =>
+                router.push("/settings", { transitionTypes: ["nav-back"] })
+              }
+            >
               <p className="text-base font-semibold text-white truncate flex-1 text-center">
                 FAQs
               </p>
@@ -88,6 +96,7 @@ export default function FaqsPage() {
                 return (
                   <Card key={faq.question} className="p-0! overflow-hidden">
                     <button
+                      ref={hapticTrigger}
                       onClick={() => toggle(index)}
                       className="flex items-center justify-between w-full px-4 py-3.5 gap-3 text-left active:bg-black/2 transition-colors duration-150"
                     >
@@ -122,6 +131,7 @@ export default function FaqsPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
     </>
   );
 }

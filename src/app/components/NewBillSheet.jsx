@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BottomSheet } from "./ui/BottomSheet";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { useReceiptCapture } from "./ReceiptCaptureProvider";
 
 const OPTIONS = [
@@ -22,6 +22,7 @@ const OPTIONS = [
 function OptionRow({ title, description, selected, onSelect }) {
   return (
     <button
+      ref={hapticTrigger}
       type="button"
       onClick={onSelect}
       className={`flex flex-row items-center justify-between w-full text-left rounded-2xl p-4 gap-3 border-[1.5px] transition-colors duration-150 ${
@@ -53,11 +54,10 @@ export const NewBillSheet = ({ setSheetOpen }) => {
 
   function handleSelectTap() {
     if (!choice) return;
-    haptic.medium();
 
     if (choice === "manual") {
       setSheetOpen(false);
-      router.push("/bills/new");
+      router.push("/bills/new", { transitionTypes: ["nav-forward"] });
       return;
     }
 
@@ -71,7 +71,7 @@ export const NewBillSheet = ({ setSheetOpen }) => {
 
     setCapturedFile(file);
     setSheetOpen(false);
-    router.push("/bills/new/review");
+    router.push("/bills/new/review", { transitionTypes: ["nav-forward"] });
   }
 
   return (
@@ -100,10 +100,7 @@ export const NewBillSheet = ({ setSheetOpen }) => {
               title={option.title}
               description={option.description}
               selected={choice === option.id}
-              onSelect={() => {
-                haptic.light();
-                setChoice(option.id);
-              }}
+              onSelect={() => setChoice(option.id)}
             />
           ))}
         </div>

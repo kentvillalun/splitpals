@@ -189,7 +189,15 @@ export default function BillsPage() {
                   </div>
                 ) : (
                   filteredBills.map((b) => (
-                    <Card key={b.id} className="p-0!" handleOnClick={() => router.push(`/history/${b.id}`)}>
+                    <Card
+                      key={b.id}
+                      className="p-0!"
+                      handleOnClick={() =>
+                        router.push(`/history/${b.id}`, {
+                          transitionTypes: ["nav-forward"],
+                        })
+                      }
+                    >
                       <div className="flex flex-row justify-between border-b border-gray-100 p-3">
                         <div className="flex flex-col">
                           <p className="text-base font-semibold text-text-primary">

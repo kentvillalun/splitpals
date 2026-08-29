@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { BackButton } from "../components/navigation/BackButton";
 
@@ -9,6 +10,11 @@ export const metadata = {
 
 export default function TermsOfServicePage() {
   return (
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
     <div className="font-body min-h-screen bg-orange-pale">
       <div className="max-w-2xl mx-auto px-6 md:px-8 py-12 md:py-16">
         <BackButton />
@@ -176,5 +182,6 @@ export default function TermsOfServicePage() {
         </div>
       </div>
     </div>
+    </ViewTransition>
   );
 }

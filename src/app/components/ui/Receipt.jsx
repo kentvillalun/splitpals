@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { CheckCircleIcon, ShareIcon } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
-import { haptic } from "@/app/lib/haptic";
 import { toast } from "sonner";
 import { getPersonDisplayName } from "@/app/lib/displayName";
 
@@ -63,18 +62,15 @@ export function Receipt({
           title: shareTitle,
           text: shareText,
         });
-        haptic.success();
       } else {
         // fallback — download the image
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = filename;
         link.click();
-        haptic.medium();
         toast.info("Receipt saved. Sharing isn't supported on this browser.");
       }
     } catch (err) {
-      haptic.error();
       toast.error("Couldn't share the receipt. Please try again.");
     }
   }
@@ -82,7 +78,6 @@ export function Receipt({
   async function handleShareAll() {
     if (!shareAllTemplateRef.current) return;
     setSharingId("all");
-    haptic.medium();
     await captureAndShare(
       shareAllTemplateRef.current,
       `${billName.replace(/\s+/g, "-").toLowerCase()}-receipt.png`,
@@ -94,11 +89,9 @@ export function Receipt({
 
   async function handleShareOne(person) {
     setSharingId(person.id);
-    haptic.medium();
 
     const node = shareTemplateRefs.current[person.id];
     if (!node) {
-      haptic.error();
       toast.error("Couldn't prepare the share image. Please try again.");
       setSharingId(null);
       return;
@@ -117,7 +110,6 @@ export function Receipt({
   async function handleTogglePaid(person) {
     if (!onTogglePaid) return;
     setTogglingId(person.id);
-    haptic.light();
     try {
       await onTogglePaid(person.id, !person.is_paid);
     } catch {

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ViewTransition } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeftIcon,
@@ -254,7 +254,6 @@ export default function EditBillPage() {
 
   // ── Bill name editing ──
   function startEditingBillName() {
-    haptic.light();
     setDraftBillName(billName);
     setIsEditingBillName(true);
   }
@@ -267,7 +266,6 @@ export default function EditBillPage() {
 
   // ── Person management ──
   function openAddPersonSheet() {
-    haptic.light();
     setAddPersonSheetOpen(true);
   }
 
@@ -300,7 +298,6 @@ export default function EditBillPage() {
       return;
     }
 
-    haptic.medium();
     setPersons((prev) => [
       ...prev,
       {
@@ -344,8 +341,6 @@ export default function EditBillPage() {
       i.personIds.includes(personId)
     );
 
-    haptic.light();
-
     if (!hasValidItems && !hasSharedParticipation) {
       removePersonAndCleanup(personId);
       return;
@@ -358,7 +353,6 @@ export default function EditBillPage() {
 
   function handleConfirmRemovePerson() {
     if (!removePersonId) return;
-    haptic.medium();
     removePersonAndCleanup(removePersonId);
     setSheetOpen(false);
     setRemovePersonId(null);
@@ -366,7 +360,6 @@ export default function EditBillPage() {
 
   // ── Shared item management ──
   function openSharedItemSheet() {
-    haptic.light();
     setSharedItemSheetOpen(true);
   }
 
@@ -389,7 +382,6 @@ export default function EditBillPage() {
       setPersons((prev) => [...prev, ...newPersons]);
     }
 
-    haptic.medium();
     setSharedItems((prev) => [...prev, { id: tempId(), name, price, personIds }]);
     setSharedItemSheetOpen(false);
   }
@@ -401,8 +393,6 @@ export default function EditBillPage() {
   // confirmation dialog — losing a split is cheap to recover from, unlike
   // removePerson's "their items get deleted" stakes.
   function removeShare(itemId, personId) {
-    haptic.light();
-
     const item = sharedItems.find((i) => i.id === itemId);
     if (!item) return;
 
@@ -425,7 +415,6 @@ export default function EditBillPage() {
       action: {
         label: "Undo",
         onClick: () => {
-          haptic.light();
           setSharedItems((prev) => {
             const stillThere = prev.find((i) => i.id === itemId);
             if (stillThere) {
@@ -448,7 +437,6 @@ export default function EditBillPage() {
 
   // ── Edit an item's split (chevron on an item row or a shared item row) ──
   function openEditSplitForItem(item, person) {
-    haptic.light();
     setEditSplitTarget({
       item: {
         id: item.id,
@@ -461,7 +449,6 @@ export default function EditBillPage() {
   }
 
   function openEditSplitForSharedItem(item) {
-    haptic.light();
     setEditSplitTarget({
       item: { id: item.id, name: item.name, price: item.price, note: "" },
       initialPersonIds: item.personIds,
@@ -539,7 +526,6 @@ export default function EditBillPage() {
 
   // ── Item management ──
   function addItem(personId) {
-    haptic.light();
     setPersons((prev) =>
       prev.map((p) =>
         p.id === personId
@@ -556,8 +542,6 @@ export default function EditBillPage() {
   // an individual item is quick to re-type, so it doesn't need the same
   // "are you sure" gate as removePerson.
   function removeItem(personId, itemId) {
-    haptic.light();
-
     const person = persons.find((p) => p.id === personId);
     const itemIndex = person ? person.items.findIndex((i) => i.id === itemId) : -1;
     const removedItem = itemIndex > -1 ? person.items[itemIndex] : null;
@@ -577,7 +561,6 @@ export default function EditBillPage() {
       action: {
         label: "Undo",
         onClick: () => {
-          haptic.light();
           setPersons((prev) =>
             prev.map((p) => {
               if (p.id !== personId) return p;
@@ -668,14 +651,12 @@ export default function EditBillPage() {
 
   // ── Cancel flow ──
   function handleCancelTap() {
-    haptic.light();
     setSheetMode("abandon");
     setSheetOpen(true);
   }
 
   function handleConfirmAbandon() {
-    haptic.medium();
-    router.push(`/history/${billId}`);
+    router.push(`/history/${billId}`, { transitionTypes: ["nav-back"] });
   }
 
   // ── Save flow ──
@@ -691,7 +672,6 @@ export default function EditBillPage() {
       toast.error("Add at least one item before saving.");
       return;
     }
-    haptic.medium();
     setSheetMode("review");
     setSheetOpen(true);
   }
@@ -702,7 +682,6 @@ export default function EditBillPage() {
 
   async function handleConfirmSave() {
     setIsSaving(true);
-    haptic.medium();
 
     // 1. Update bill name
     const { error: billError } = await supabase
@@ -711,7 +690,6 @@ export default function EditBillPage() {
       .eq("id", billId);
 
     if (billError) {
-      haptic.error();
       toast.error("Couldn't save changes. Please try again.");
       setIsSaving(false);
       return;
@@ -861,29 +839,16 @@ export default function EditBillPage() {
       }
     }
 
-    haptic.success();
     setSheetOpen(false);
-    router.push(`/history/${billId}`);
+    router.push(`/history/${billId}`, { transitionTypes: ["nav-back"] });
   }
 
-  // ── Loading / error states ──
-  if (isLoading) {
-    return (
-      <>
-        <DesktopGuard />
-        <Page className="bg-backgroud">
-          <PageContent className="px-4 pt-6">
-            <div className="max-w-xl mx-auto w-full flex flex-col gap-3">
-              <Skeleton height={28} width={140} className="mx-auto" />
-              <Skeleton height={160} className="rounded-2xl" />
-              <Skeleton height={160} className="rounded-2xl" />
-            </div>
-          </PageContent>
-        </Page>
-      </>
-    );
-  }
-
+  // ── Error state — nothing to show without the bill, so this stays a
+  // separate full-page branch. Loading, unlike error, now renders through
+  // the same tree as the loaded page (skeletons in place of data) so the
+  // header/save button stay put and the nav-forward/nav-back transition has
+  // a consistent wrapped tree to animate on every load, not just once data
+  // arrives. ──
   if (loadError) {
     return (
       <>
@@ -911,6 +876,11 @@ export default function EditBillPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
@@ -918,13 +888,21 @@ export default function EditBillPage() {
             <div className="gradient-button w-full px-4 pt-5 pb-6 rounded-b-3xl fixed top-0 left-0 right-0 z-30">
               <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
                 <button
+                  ref={hapticTrigger}
                   onClick={handleCancelTap}
                   className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150 shrink-0"
                 >
                   <ArrowLeftIcon className="w-4 stroke-white" />
                 </button>
 
-                {isEditingBillName ? (
+                {isLoading ? (
+                  <Skeleton
+                    width={120}
+                    height={16}
+                    baseColor="rgba(255,255,255,0.2)"
+                    highlightColor="rgba(255,255,255,0.35)"
+                  />
+                ) : isEditingBillName ? (
                   <input
                     autoFocus
                     value={draftBillName}
@@ -936,6 +914,7 @@ export default function EditBillPage() {
                   />
                 ) : (
                   <button
+                    ref={hapticTrigger}
                     onClick={startEditingBillName}
                     className="flex items-center gap-1.5 min-w-0 flex-1 justify-center"
                   >
@@ -955,6 +934,12 @@ export default function EditBillPage() {
 
             <div className="max-w-xl mx-auto w-full px-4 flex flex-col gap-4 pb-32 -mt-5">
               {/* Person cards */}
+              {isLoading ? (
+                <div className="flex flex-col gap-4">
+                  <Skeleton height={160} className="rounded-2xl" />
+                  <Skeleton height={160} className="rounded-2xl" />
+                </div>
+              ) : (
               <AnimatePresence initial={false}>
                 {persons.map((person) => (
                   <motion.div
@@ -975,6 +960,7 @@ export default function EditBillPage() {
                       </div>
                       {persons.length > 1 && (
                         <button
+                          ref={hapticTrigger}
                           onClick={() => removePerson(person.id)}
                           className="shrink-0"
                         >
@@ -1026,6 +1012,7 @@ export default function EditBillPage() {
                                       ₱{share.toFixed(2)}
                                     </p>
                                     <button
+                                      ref={hapticTrigger}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         removeShare(item.id, person.id);
@@ -1085,6 +1072,7 @@ export default function EditBillPage() {
                                 </div>
                                 {person.items.length > 1 && (
                                   <button
+                                    ref={hapticTrigger}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeItem(person.id, item.id);
@@ -1117,6 +1105,7 @@ export default function EditBillPage() {
                       </div>
 
                       <button
+                        ref={hapticTrigger}
                         onClick={() => addItem(person.id)}
                         className="flex items-center justify-center gap-1.5 mt-1 py-2 rounded-xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/50 transition-all duration-150 active:scale-95"
                       >
@@ -1139,25 +1128,31 @@ export default function EditBillPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              )}
 
-              {/* Add person */}
-              <button
-                onClick={openAddPersonSheet}
-                className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95"
-              >
-                <UserCircleIcon className="w-4" />
-                Add another person
-              </button>
+              {!isLoading && (
+                <>
+                  {/* Add person */}
+                  <button
+                    ref={hapticTrigger}
+                    onClick={openAddPersonSheet}
+                    className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95"
+                  >
+                    <UserCircleIcon className="w-4" />
+                    Add another person
+                  </button>
 
-              {/* Add shared item */}
-              <button
-                onClick={openSharedItemSheet}
-                disabled={persons.length === 0}
-                className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <PlusIcon className="w-4" />
-                Add shared item
-              </button>
+                  {/* Add shared item */}
+                  <button
+                    onClick={openSharedItemSheet}
+                    disabled={persons.length === 0}
+                    className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <PlusIcon className="w-4" />
+                    Add shared item
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -1168,13 +1163,17 @@ export default function EditBillPage() {
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
                   Grand total
                 </p>
-                <p className="font-bold text-base">
-                  ₱{grandTotal.toFixed(2)}
-                </p>
+                {isLoading ? (
+                  <Skeleton width={60} height={16} />
+                ) : (
+                  <p className="font-bold text-base">
+                    ₱{grandTotal.toFixed(2)}
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleReviewTap}
-                disabled={!hasValidItem}
+                disabled={isLoading || !hasValidItem}
                 className="w-full gradient-button py-3.5 rounded-2xl text-white font-semibold text-sm transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
               >
                 Save changes
@@ -1183,6 +1182,7 @@ export default function EditBillPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {/* Confirmation bottom sheet */}
       {mounted &&
@@ -1251,7 +1251,6 @@ export default function EditBillPage() {
                           className="text-text-secondary font-body text-xs"
                           disabled={isSaving}
                           onClick={() => {
-                            haptic.light();
                             setSheetOpen(false);
                           }}
                         >
@@ -1276,6 +1275,7 @@ export default function EditBillPage() {
                       </div>
                       <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                         <button
+                          ref={hapticTrigger}
                           onClick={handleConfirmRemovePerson}
                           className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                           style={{
@@ -1287,9 +1287,9 @@ export default function EditBillPage() {
                           Yes, remove
                         </button>
                         <button
+                          ref={hapticTrigger}
                           className="text-text-secondary font-body text-xs"
                           onClick={() => {
-                            haptic.light();
                             setSheetOpen(false);
                             setRemovePersonId(null);
                           }}
@@ -1311,6 +1311,7 @@ export default function EditBillPage() {
                       </div>
                       <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                         <button
+                          ref={hapticTrigger}
                           onClick={handleConfirmAbandon}
                           className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                           style={{
@@ -1322,11 +1323,9 @@ export default function EditBillPage() {
                           Yes, discard
                         </button>
                         <button
+                          ref={hapticTrigger}
                           className="text-text-secondary font-body text-xs"
-                          onClick={() => {
-                            haptic.light();
-                            setSheetOpen(false);
-                          }}
+                          onClick={() => setSheetOpen(false)}
                         >
                           No, keep editing
                         </button>

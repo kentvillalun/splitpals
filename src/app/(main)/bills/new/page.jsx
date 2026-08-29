@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRightIcon,
@@ -189,7 +189,6 @@ export default function NewBillPage() {
 
   // ── Bill name editing ──
   function startEditingBillName() {
-    haptic.light();
     setDraftBillName(billName);
     setIsEditingBillName(true);
   }
@@ -202,7 +201,6 @@ export default function NewBillPage() {
 
   // ── Person management ──
   function openAddPersonSheet() {
-    haptic.light();
     setAddPersonSheetOpen(true);
   }
 
@@ -235,7 +233,6 @@ export default function NewBillPage() {
       return;
     }
 
-    haptic.medium();
     setPersons((prev) => [
       ...prev,
       {
@@ -279,8 +276,6 @@ export default function NewBillPage() {
       i.personIds.includes(personId)
     );
 
-    haptic.light();
-
     if (!hasValidItems && !hasSharedParticipation) {
       removePersonAndCleanup(personId);
       return;
@@ -293,7 +288,6 @@ export default function NewBillPage() {
 
   function handleConfirmRemovePerson() {
     if (!removePersonId) return;
-    haptic.medium();
     removePersonAndCleanup(removePersonId);
     setSheetOpen(false);
     setRemovePersonId(null);
@@ -301,7 +295,6 @@ export default function NewBillPage() {
 
   // ── Shared item management ──
   function openSharedItemSheet() {
-    haptic.light();
     setSharedItemSheetOpen(true);
   }
 
@@ -324,7 +317,6 @@ export default function NewBillPage() {
       setPersons((prev) => [...prev, ...newPersons]);
     }
 
-    haptic.medium();
     setSharedItems((prev) => [...prev, { id: tempId(), name, price, personIds }]);
     setSharedItemSheetOpen(false);
   }
@@ -336,8 +328,6 @@ export default function NewBillPage() {
   // confirmation dialog — losing a split is cheap to recover from, unlike
   // removePerson's "their items get deleted" stakes.
   function removeShare(itemId, personId) {
-    haptic.light();
-
     const item = sharedItems.find((i) => i.id === itemId);
     if (!item) return;
 
@@ -360,7 +350,6 @@ export default function NewBillPage() {
       action: {
         label: "Undo",
         onClick: () => {
-          haptic.light();
           setSharedItems((prev) => {
             const stillThere = prev.find((i) => i.id === itemId);
             if (stillThere) {
@@ -383,7 +372,6 @@ export default function NewBillPage() {
 
   // ── Edit an item's split (chevron on an item row or a shared item row) ──
   function openEditSplitForItem(item, person) {
-    haptic.light();
     setEditSplitTarget({
       item: {
         id: item.id,
@@ -396,7 +384,6 @@ export default function NewBillPage() {
   }
 
   function openEditSplitForSharedItem(item) {
-    haptic.light();
     setEditSplitTarget({
       item: { id: item.id, name: item.name, price: item.price, note: "" },
       initialPersonIds: item.personIds,
@@ -471,7 +458,6 @@ export default function NewBillPage() {
 
   // ── Item management ──
   function addItem(personId) {
-    haptic.light();
     setPersons((prev) =>
       prev.map((p) =>
         p.id === personId
@@ -488,8 +474,6 @@ export default function NewBillPage() {
   // an individual item is quick to re-type, so it doesn't need the same
   // "are you sure" gate as removePerson.
   function removeItem(personId, itemId) {
-    haptic.light();
-
     const person = persons.find((p) => p.id === personId);
     const itemIndex = person ? person.items.findIndex((i) => i.id === itemId) : -1;
     const removedItem = itemIndex > -1 ? person.items[itemIndex] : null;
@@ -509,7 +493,6 @@ export default function NewBillPage() {
       action: {
         label: "Undo",
         onClick: () => {
-          haptic.light();
           setPersons((prev) =>
             prev.map((p) => {
               if (p.id !== personId) return p;
@@ -613,14 +596,12 @@ export default function NewBillPage() {
       toast.error("Add at least one item before continuing.");
       return;
     }
-    haptic.medium();
     setSheetMode("review");
     setSheetOpen(true);
   }
 
   async function handleConfirmSave() {
     setIsSaving(true);
-    haptic.medium();
 
     const {
       data: { user },
@@ -640,7 +621,6 @@ export default function NewBillPage() {
       .single();
 
     if (billError || !bill) {
-      haptic.error();
       toast.error("Couldn't save the bill. Please try again.");
       setIsSaving(false);
       return;
@@ -718,9 +698,8 @@ export default function NewBillPage() {
       }
     }
 
-    haptic.success();
     setSheetOpen(false);
-    router.push(`/receipt?id=${bill.id}`);
+    router.push(`/receipt?id=${bill.id}`, { transitionTypes: ["nav-forward"] });
   }
 
   const [sheetMode, setSheetMode] = useState(null); // 'review' | 'abandon' | 'removePerson' | null
@@ -734,9 +713,8 @@ export default function NewBillPage() {
     persons.some((p) => p.items.some((i) => i.name.trim()));
 
   function handleCancelTap() {
-    haptic.light();
     if (!hasUnsavedProgress) {
-      router.push("/dashboard");
+      router.push("/dashboard", { transitionTypes: ["nav-back"] });
       return;
     }
     setSheetMode("abandon");
@@ -744,13 +722,17 @@ export default function NewBillPage() {
   }
 
   function handleConfirmAbandon() {
-    haptic.medium();
-    router.push("/dashboard");
+    router.push("/dashboard", { transitionTypes: ["nav-back"] });
   }
 
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
@@ -768,6 +750,7 @@ export default function NewBillPage() {
                 />
               ) : (
                 <button
+                  ref={hapticTrigger}
                   onClick={startEditingBillName}
                   className="flex items-center gap-1.5 min-w-0 flex-1 justify-center"
                 >
@@ -804,6 +787,7 @@ export default function NewBillPage() {
                       </div>
                       {persons.length > 1 && (
                         <button
+                          ref={hapticTrigger}
                           onClick={() => removePerson(person.id)}
                           className="shrink-0"
                         >
@@ -855,6 +839,7 @@ export default function NewBillPage() {
                                       ₱{share.toFixed(2)}
                                     </p>
                                     <button
+                                      ref={hapticTrigger}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         removeShare(item.id, person.id);
@@ -914,6 +899,7 @@ export default function NewBillPage() {
                                 </div>
                                 {person.items.length > 1 && (
                                   <button
+                                    ref={hapticTrigger}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeItem(person.id, item.id);
@@ -946,6 +932,7 @@ export default function NewBillPage() {
                       </div>
 
                       <button
+                        ref={hapticTrigger}
                         onClick={() => addItem(person.id)}
                         className="flex items-center justify-center gap-1.5 mt-1 py-2 rounded-xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/50 transition-all duration-150 active:scale-95"
                       >
@@ -971,6 +958,7 @@ export default function NewBillPage() {
 
               {/* Add person */}
               <button
+                ref={hapticTrigger}
                 onClick={openAddPersonSheet}
                 className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/40 transition-all duration-150 active:scale-95"
               >
@@ -1012,6 +1000,7 @@ export default function NewBillPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {/* Confirmation bottom sheet — same pattern as onboarding sign-up sheet */}
       {mounted &&
@@ -1080,7 +1069,6 @@ export default function NewBillPage() {
                           className="text-text-secondary font-body text-xs"
                           disabled={isSaving}
                           onClick={() => {
-                            haptic.light();
                             setSheetOpen(false);
                           }}
                         >
@@ -1105,6 +1093,7 @@ export default function NewBillPage() {
                       </div>
                       <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                         <button
+                          ref={hapticTrigger}
                           onClick={handleConfirmRemovePerson}
                           className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                           style={{
@@ -1116,9 +1105,9 @@ export default function NewBillPage() {
                           Yes, remove
                         </button>
                         <button
+                          ref={hapticTrigger}
                           className="text-text-secondary font-body text-xs"
                           onClick={() => {
-                            haptic.light();
                             setSheetOpen(false);
                             setRemovePersonId(null);
                           }}
@@ -1140,6 +1129,7 @@ export default function NewBillPage() {
                       </div>
                       <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                         <button
+                          ref={hapticTrigger}
                           onClick={handleConfirmAbandon}
                           className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                           style={{
@@ -1151,11 +1141,9 @@ export default function NewBillPage() {
                           Yes, abandon
                         </button>
                         <button
+                          ref={hapticTrigger}
                           className="text-text-secondary font-body text-xs"
-                          onClick={() => {
-                            haptic.light();
-                            setSheetOpen(false);
-                          }}
+                          onClick={() => setSheetOpen(false)}
                         >
                           No, keep editing
                         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
@@ -9,7 +9,7 @@ import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { useReceiptCapture } from "@/app/components/ReceiptCaptureProvider";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 
 export default function ReviewPhotoPage() {
   const router = useRouter();
@@ -41,13 +41,11 @@ export default function ReviewPhotoPage() {
   }, [previewUrl]);
 
   function handleBack() {
-    haptic.light();
     setCapturedFile(null);
-    router.back();
+    router.push("/dashboard", { transitionTypes: ["nav-back"] });
   }
 
   function handleRetakeTap() {
-    haptic.light();
     retakeInputRef.current?.click();
   }
 
@@ -67,7 +65,6 @@ export default function ReviewPhotoPage() {
     setInlineError(null);
     setErrorStatus(null);
     setIsUploading(true);
-    haptic.medium();
 
     try {
       const formData = new FormData();
@@ -80,7 +77,6 @@ export default function ReviewPhotoPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        haptic.error();
         if (res.status === 429) {
           // Informational, no action needed — toast only, buttons untouched.
           toast.error(data.error);
@@ -95,11 +91,9 @@ export default function ReviewPhotoPage() {
         return;
       }
 
-      haptic.success();
       setScannedItems(data.items ?? []);
-      router.push("/bills/new/assign");
+      router.push("/bills/new/assign", { transitionTypes: ["nav-forward"] });
     } catch {
-      haptic.error();
       // Not the photo's fault — same button treatment as 503.
       setInlineError("Something went wrong. Please try again.");
       setErrorStatus(503);
@@ -109,9 +103,8 @@ export default function ReviewPhotoPage() {
   }
 
   function handleAddManually() {
-    haptic.light();
     setCapturedFile(null);
-    router.push("/bills/new");
+    router.push("/bills/new", { transitionTypes: ["nav-forward"] });
   }
 
   // 422 (unreadable): retrying the same photo is pointless — drop "Use this
@@ -125,6 +118,11 @@ export default function ReviewPhotoPage() {
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud">
         <PageContent className="px-0" withBottomNav={false}>
           <PageHeader onBack={handleBack}>
@@ -187,6 +185,7 @@ export default function ReviewPhotoPage() {
                   </button>
                 ) : (
                   <button
+                    ref={hapticTrigger}
                     onClick={handleAddManually}
                     className="flex-[1.5] rounded-2xl py-3.5 text-sm font-semibold text-orange border-[1.5px] border-orange transition-all duration-150 active:scale-95"
                   >
@@ -197,6 +196,7 @@ export default function ReviewPhotoPage() {
 
               {showAddManually && showUseThisPhoto && (
                 <button
+                  ref={hapticTrigger}
                   onClick={handleAddManually}
                   className="w-full rounded-2xl py-3.5 text-sm font-semibold text-orange border-[1.5px] border-orange transition-all duration-150 active:scale-95"
                 >
@@ -215,6 +215,7 @@ export default function ReviewPhotoPage() {
           />
         </PageContent>
       </Page>
+      </ViewTransition>
     </>
   );
 }

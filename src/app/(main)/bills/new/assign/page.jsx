@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { useReceiptCapture } from "@/app/components/ReceiptCaptureProvider";
 import { AssignItemSheet } from "@/app/components/AssignItemSheet";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { supabase } from "@/app/lib/supabase";
 import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
@@ -122,7 +122,6 @@ export default function AssignItemsPage() {
       if (!hasProgressRef.current) return;
       // Re-arm immediately so the back-navigation doesn't actually complete yet.
       window.history.pushState({ splitpalsAssignGuard: true }, "");
-      haptic.light();
       setSheetOpen(true);
     }
     window.addEventListener("popstate", handlePopState);
@@ -130,17 +129,15 @@ export default function AssignItemsPage() {
   }, []);
 
   function handleBack() {
-    haptic.light();
     if (!hasProgress) {
-      router.push("/dashboard");
+      router.push("/dashboard", { transitionTypes: ["nav-back"] });
       return;
     }
     setSheetOpen(true);
   }
 
   function handleConfirmAbandon() {
-    haptic.medium();
-    router.push("/dashboard");
+    router.push("/dashboard", { transitionTypes: ["nav-back"] });
   }
 
   function handleAssignTap(item) {
@@ -188,12 +185,10 @@ export default function AssignItemsPage() {
       )
     );
 
-    haptic.medium();
     setAssigningItem(null);
   }
 
   function removePerson(personId) {
-    haptic.light();
     setPersons((prev) => prev.filter((p) => p.id !== personId));
     setItems((prev) =>
       prev.map((item) =>
@@ -205,7 +200,6 @@ export default function AssignItemsPage() {
   }
 
   function handleRemoveShare(itemId, personId) {
-    haptic.light();
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
@@ -252,7 +246,6 @@ export default function AssignItemsPage() {
     if (!canReview) return;
 
     setIsSaving(true);
-    haptic.medium();
 
     const {
       data: { user },
@@ -274,7 +267,6 @@ export default function AssignItemsPage() {
 
     if (billError || !bill) {
       if (billError) console.error("Bill insert error:", billError);
-      haptic.error();
       toast.error("Couldn't save the bill. Please try again.");
       setIsSaving(false);
       return;
@@ -372,7 +364,6 @@ export default function AssignItemsPage() {
         }
       }
     } catch {
-      haptic.error();
       // Roll back rather than leave a half-saved bill. Items are deleted
       // explicitly first — a shared item can have a null person_id, so it
       // wouldn't otherwise be reachable via a cascade off the bill/persons.
@@ -386,13 +377,17 @@ export default function AssignItemsPage() {
       return;
     }
 
-    haptic.success();
-    router.push(`/receipt?id=${bill.id}`);
+    router.push(`/receipt?id=${bill.id}`, { transitionTypes: ["nav-forward"] });
   }
 
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5">
@@ -470,6 +465,7 @@ export default function AssignItemsPage() {
                           </p>
                         </div>
                         <button
+                          ref={hapticTrigger}
                           onClick={() => removePerson(person.id)}
                           className="shrink-0"
                         >
@@ -518,6 +514,7 @@ export default function AssignItemsPage() {
                                       ₱{share.toFixed(2)}
                                     </p>
                                     <button
+                                      ref={hapticTrigger}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleRemoveShare(item.id, person.id);
@@ -572,6 +569,7 @@ export default function AssignItemsPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {/* Accidental-exit confirmation — same pattern as manual entry's abandon sheet */}
       {mounted &&
@@ -619,6 +617,7 @@ export default function AssignItemsPage() {
                   </div>
                   <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                     <button
+                      ref={hapticTrigger}
                       onClick={handleConfirmAbandon}
                       className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                       style={{
@@ -629,11 +628,9 @@ export default function AssignItemsPage() {
                       Yes, abandon
                     </button>
                     <button
+                      ref={hapticTrigger}
                       className="text-text-secondary font-body text-xs"
-                      onClick={() => {
-                        haptic.light();
-                        setSheetOpen(false);
-                      }}
+                      onClick={() => setSheetOpen(false)}
                     >
                       No, keep editing
                     </button>

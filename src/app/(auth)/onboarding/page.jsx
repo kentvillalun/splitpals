@@ -12,7 +12,7 @@ import CountUp from "react-countup";
 import { createPortal } from "react-dom";
 import { FaGoogle } from "react-icons/fa";
 import Link from "next/link";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { supabase } from "@/app/lib/supabase";
 import { toast } from "sonner";
 
@@ -153,9 +153,9 @@ export default function OnboardingPage() {
 
                 {currentStep < 2 && (
                   <button
+                    ref={hapticTrigger}
                     className="text-sm text-text-tertiary"
                     onClick={() => {
-                      haptic.light();
                       setCurrentStep(2);
                       setTimeout(() => openSheet("skip"), 400);
                     }}
@@ -280,7 +280,6 @@ export default function OnboardingPage() {
                             className="flex flex-row items-center gap-2 text-orange font-semibold text-sm border-dashed w-full border rounded-xl py-2.5 px-3 bg-orange/10 transition-all active:scale-95 duration-200 ease-in-out hover:cursor-pointer hover:bg-orange/20 disabled:opacity-35 disabled:pointer-events-none"
                             disabled={allRevealed === true}
                             onClick={() => {
-                              haptic.light();
                               setRevealCount((prev) => prev + 1);
                             }}
                           >
@@ -511,6 +510,7 @@ export default function OnboardingPage() {
 
                               {printedCount > 7 && (
                                 <motion.button
+                                  ref={hapticTrigger}
                                   key="you-share"
                                   className="flex flex-row items-center justify-center gap-2 font-semibold text-orange py-1.5 border-orange/50 border rounded-lg hover:bg-orange/20 transition-all active:scale-95 duration-200 ease-in-out"
                                   initial={{ opacity: 0, y: 4 }}
@@ -519,10 +519,7 @@ export default function OnboardingPage() {
                                     duration: 0.2,
                                     ease: "easeOut",
                                   }}
-                                  onClick={() => {
-                                    haptic.medium();
-                                    openSheet("share-you");
-                                  }}
+                                  onClick={() => openSheet("share-you")}
                                 >
                                   <ShareIcon className="w-3 text-orange" />
                                   <p>Share to You</p>
@@ -601,6 +598,7 @@ export default function OnboardingPage() {
 
                               {printedCount > 12 && (
                                 <motion.button
+                                  ref={hapticTrigger}
                                   key="marco-share"
                                   className="flex flex-row items-center justify-center gap-2 font-semibold text-orange py-1.5 border-orange/50 border rounded-lg hover:bg-orange/20 transition-all active:scale-95 duration-200 ease-in-out"
                                   initial={{ opacity: 0, y: 4 }}
@@ -609,10 +607,7 @@ export default function OnboardingPage() {
                                     duration: 0.2,
                                     ease: "easeOut",
                                   }}
-                                  onClick={() => {
-                                    haptic.medium();
-                                    openSheet("share-marco");
-                                  }}
+                                  onClick={() => openSheet("share-marco")}
                                 >
                                   <ShareIcon className="w-3 text-orange" />
                                   <p>Share to Marco</p>
@@ -680,7 +675,6 @@ export default function OnboardingPage() {
                       className="flex flex-row items-center justify-between w-full gradient-button py-3.5 px-4 rounded-2xl disabled:opacity-25 disabled:pointer-events-none hover:cursor-pointer transition-all active:scale-95 duration-200 ease-in-out hover:opacity-90"
                       disabled={allRevealed === false}
                       onClick={() => {
-                        haptic.medium();
                         setCurrentStep((prev) => prev + 1);
                       }}
                     >
@@ -714,7 +708,6 @@ export default function OnboardingPage() {
                     <button
                       className="flex flex-row items-center justify-between w-full gradient-button py-3.5 px-4 rounded-2xl disabled:opacity-25 disabled:pointer-events-none hover:cursor-pointer transition-all active:scale-95 duration-200 ease-in-out hover:opacity-90"
                       onClick={() => {
-                        haptic.medium();
                         setCurrentStep((prev) => prev + 1);
                       }}
                       disabled={allPersonsRevealed === false}
@@ -743,11 +736,9 @@ export default function OnboardingPage() {
                     exit={{ opacity: 0, y: 14 }}
                   >
                     <button
+                      ref={hapticTrigger}
                       className="flex flex-row items-center justify-between w-full gradient-button py-3.5 px-4 rounded-2xl disabled:opacity-25 disabled:pointer-events-none hover:cursor-pointer transition-all active:scale-95 duration-200 ease-in-out hover:opacity-90"
-                      onClick={() => {
-                        haptic.medium();
-                        openSheet("next");
-                      }}
+                      onClick={() => openSheet("next")}
                     >
                       <p className="font-bold text-sm text-white">
                         Get started — It's free
@@ -812,6 +803,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="flex flex-col gap-2 w-full items-center max-w-xl">
                     <button
+                      ref={hapticTrigger}
                       className=" flex flex-row items-center justify-center w-full hover:cursor-pointer transition-all duration-200 ease-in-out hover:opacity-90 rounded-2xl py-4 gap-2 font-bold text-white font-body"
                       style={{
                         background:
@@ -819,8 +811,6 @@ export default function OnboardingPage() {
                         borderBottom: "1.5px solid #0a0a0a",
                       }}
                       onClick={async () => {
-                        haptic.medium();
-
                         const { error } = await supabase.auth.signInWithOAuth({
                           provider: "google",
                           options: {
@@ -829,7 +819,6 @@ export default function OnboardingPage() {
                         });
 
                         if (error) {
-                          haptic.error();
                           toast.error(
                             "Something went wrong. Please try again.",
                           );
@@ -861,11 +850,9 @@ export default function OnboardingPage() {
                       .
                     </p>
                     <button
+                      ref={hapticTrigger}
                       className="text-text-secondary font-body text-xs"
-                      onClick={() => {
-                        haptic.light();
-                        setSheetOpen(false);
-                      }}
+                      onClick={() => setSheetOpen(false)}
                     >
                       Maybe later
                     </button>

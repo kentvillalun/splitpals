@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
@@ -9,7 +9,7 @@ import { PageContent } from "@/app/components/layout/PageContent";
 import { useFetch } from "@/app/lib/hooks/useFetch";
 import { formatDate } from "@/app/lib/formatDate";
 import { supabase } from "@/app/lib/supabase";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeftIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Receipt } from "@/app/components/ui/Receipt";
@@ -68,31 +68,32 @@ export default function HistoryDetailPage() {
   }
 
   function handleDeleteTap() {
-    haptic.light();
     setDeleteSheetOpen(true);
   }
 
   async function handleConfirmDelete() {
     setIsDeleting(true);
-    haptic.medium();
 
     const { error } = await supabase.from("bills").delete().eq("id", id);
 
     if (error) {
-      haptic.error();
       toast.error("Couldn't delete the bill. Please try again.");
       setIsDeleting(false);
       return;
     }
 
-    haptic.success();
     toast.success("Bill deleted.");
-    router.push("/dashboard");
+    router.push("/dashboard", { transitionTypes: ["nav-back"] });
   }
 
   return (
     <>
       <DesktopGuard />
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
       <Page className="bg-backgroud lg:hidden">
         <PageContent className="px-0" withBottomNav={false}>
           <div className="flex flex-col w-full gap-5 relative">
@@ -101,7 +102,9 @@ export default function HistoryDetailPage() {
               <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() =>
+                      router.push("/dashboard", { transitionTypes: ["nav-back"] })
+                    }
                     className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150 shrink-0"
                   >
                     <ArrowLeftIcon className="w-4 stroke-white" />
@@ -114,12 +117,17 @@ export default function HistoryDetailPage() {
                 {!isLoading && bill && (
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => router.push(`/bills/edit/${id}`)}
+                      onClick={() =>
+                        router.push(`/bills/edit/${id}`, {
+                          transitionTypes: ["nav-forward"],
+                        })
+                      }
                       className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150"
                     >
                       <PencilIcon className="w-4 stroke-white" />
                     </button>
                     <button
+                      ref={hapticTrigger}
                       onClick={handleDeleteTap}
                       className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors duration-150"
                     >
@@ -185,6 +193,7 @@ export default function HistoryDetailPage() {
           </div>
         </PageContent>
       </Page>
+      </ViewTransition>
 
       {mounted &&
         createPortal(
@@ -244,7 +253,6 @@ export default function HistoryDetailPage() {
                       className="text-text-secondary font-body text-xs"
                       disabled={isDeleting}
                       onClick={() => {
-                        haptic.light();
                         setDeleteSheetOpen(false);
                       }}
                     >

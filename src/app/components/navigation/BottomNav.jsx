@@ -13,7 +13,7 @@ import {
   Cog6ToothIcon as Cog6ToothIconSolid,
 } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
-import { haptic } from "@/app/lib/haptic";
+import { hapticTrigger } from "ios-haptics";
 import { useNewBillSheet } from "@/app/components/NewBillSheetProvider";
 
 const TAB_ROUTES = ["/dashboard", "/history", "/settings"];
@@ -28,8 +28,6 @@ export const BottomNav = () => {
   const inSettings = pathName.startsWith("/settings");
 
   function goToTab(path) {
-    haptic.light();
-
     const currentIndex = TAB_ROUTES.findIndex((route) =>
       pathName.startsWith(route)
     );
@@ -47,6 +45,7 @@ export const BottomNav = () => {
     <div className="lg:hidden flex flex-row gap-4 items-center min-w-screen fixed bottom-6 h-auto px-4 font-body font-medium mx-auto justify-center" style={{ viewTransitionName: "bottom-nav"}}>
       <div className="grid flex-1 grid-cols-3 rounded-[18px] bg-white h-auto items-center px-1.5 py-2.5 new-border text-[10px] gap-1 md:max-w-lg">
         <button
+          ref={hapticTrigger}
           className={`flex flex-col items-center rounded-2xl py-1 transition-colors duration-200 ${inDashboard ? "bg-primary/10" : ""}`}
           onClick={() => goToTab("/dashboard")}
         >
@@ -62,6 +61,7 @@ export const BottomNav = () => {
           </label>
         </button>
         <button
+          ref={hapticTrigger}
           className={`flex flex-col items-center rounded-2xl py-1 transition-color duration-200  ${inBills ? "bg-primary/10" : ""}`}
           onClick={() => goToTab("/history")}
         >
@@ -77,6 +77,7 @@ export const BottomNav = () => {
           </label>
         </button>
         <button
+          ref={hapticTrigger}
           className={`flex flex-col items-center rounded-2xl py-1 transition-color duration-200  ${inSettings ? "bg-primary/10" : ""}`}
           onClick={() => goToTab("/settings")}
         >
@@ -93,11 +94,9 @@ export const BottomNav = () => {
         </button>
       </div>
       <button
+        ref={hapticTrigger}
         className="w-16 flex items-center justify-center h-16 gradient-button rounded-[18px]"
-        onClick={() => {
-          haptic.light();
-          openNewBillSheet();
-        }}
+        onClick={openNewBillSheet}
       >
         <PlusIcon className="w-5 stroke-3 stroke-white" />
       </button>
