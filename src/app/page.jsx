@@ -538,7 +538,7 @@ export default function LandingPage() {
             <Image src={"/onboarding/logo.svg"} fill priority alt="Splitpals" />
           </div>
           <span className="text-sm text-dark/45">
-            Made with ❤️ by Kent Villalun
+            Made with ❤️ by Kent
           </span>
           <div className="flex items-center gap-2 mt-2 text-xs text-dark/40">
             <Link
@@ -556,57 +556,10 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-        <button
-          onClick={() => setGcashOpen(true)}
-          className="flex items-center gap-2 bg-orange-tint text-orange text-sm font-bold px-4 py-2.5 rounded-full hover:bg-orange/15 transition-colors"
-        >
-          💛 Support via GCash
-        </button>
+       
       </footer>
 
-      {/* ── GCash QR popover/modal — place this near the end of the component, alongside other AnimatePresence-wrapped overlays ── */}
-      <AnimatePresence>
-        {gcashOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/50"
-              onClick={() => setGcashOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-3xl p-6 max-w-xs w-[90%] flex flex-col items-center gap-4 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
-            >
-              <p className="font-display text-lg font-bold text-dark text-center">
-                Scan to send via GCash
-              </p>
-              <div className="relative w-48 h-56">
-                <Image
-                  src="/marketing/gcash.jpg"
-                  alt="GCash QR code"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <p className="text-xs text-dark/45 text-center">
-                Every bit helps keep SplitPals running. Thank you! 🐾
-              </p>
-              <button
-                onClick={() => setGcashOpen(false)}
-                className="text-sm font-semibold text-dark/45 hover:text-dark transition-colors"
-              >
-                Close
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      
     </div>
   );
 }
