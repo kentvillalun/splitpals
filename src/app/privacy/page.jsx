@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy for SplitPals
         </h1>
         <p className="text-sm text-dark/45 mb-10">
-          Last updated: July 9, 2026
+          Last updated: August 29, 2026
         </p>
 
         <div className="flex flex-col gap-9 text-base text-dark/70 leading-relaxed">
@@ -169,10 +169,7 @@ export default function PrivacyPolicyPage() {
               7. Data Retention and Account Deletion
             </h2>
             <p>
-              We keep your data for as long as your account remains active.
-              If you'd like your account and data deleted, please email us
-              — in-app self-service account deletion is coming soon, but for
-              now deletion requests are handled manually.
+              We keep your data for as long as your account remains active. You can delete your account and all associated data at any time from Settings - this is permanent and cannot be undone.
             </p>
           </section>
 

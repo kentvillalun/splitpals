@@ -17,7 +17,7 @@ export default function TermsOfServicePage() {
           Terms of Service for SplitPals
         </h1>
         <p className="text-sm text-dark/45 mb-10">
-          Last updated: July 9, 2026
+          Last updated: August 29, 2026
         </p>
 
         <div className="flex flex-col gap-9 text-base text-dark/70 leading-relaxed">
@@ -129,8 +129,7 @@ export default function TermsOfServicePage() {
               9. Termination
             </h2>
             <p>
-              You may stop using SplitPals and request account deletion at
-              any time by contacting us (see Section 12). We may suspend or
+              You may stop using SplitPals and delete your account at any time from Settings, or by contacting us (see Section 12). We may suspend or
               terminate accounts that violate these Terms, particularly
               Section 4 (User Conduct).
             </p>

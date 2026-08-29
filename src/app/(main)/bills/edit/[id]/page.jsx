@@ -11,6 +11,7 @@ import { haptic } from "@/app/lib/haptic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeftIcon,
+  ChevronRightIcon,
   PencilIcon,
   TrashIcon,
   PlusIcon,
@@ -21,6 +22,7 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { AddPersonSheet } from "@/app/components/AddPersonSheet";
 import { AddSharedItemSheet } from "@/app/components/AddSharedItemSheet";
+import { EditItemSplitSheet } from "@/app/components/EditItemSplitSheet";
 import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
 
@@ -30,6 +32,96 @@ import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
 // otherwise start re-issuing ids already in use and collide as React keys.
 function tempId() {
   return `temp-${crypto.randomUUID()}`;
+}
+
+// Resolves a PersonPicker confirm payload (existingPersonIds + freshly
+// picked contacts/typed names/YOU) against the bill's current persons —
+// reusing an existing person's id (matched by contactId, currentUser id, or
+// case-insensitive name) instead of minting a duplicate person for someone
+// already added earlier in this session. Without this, re-picking an
+// already-in-bill contact across multiple item-split edits would create a
+// second person row for the same real person, inflating grandTotal and
+// breaking name lookups (splitWithLabel etc. would find the "wrong" id).
+function resolvePersonSelection(
+  persons,
+  currentUser,
+  { existingPersonIds, contacts: selectedContacts, newNames, includeYou }
+) {
+  const personIds = [...existingPersonIds];
+  const newPersons = [];
+
+  function findExisting(predicate) {
+    return persons.find(predicate) ?? newPersons.find(predicate);
+  }
+
+  for (const contact of selectedContacts) {
+    const existing = findExisting((p) => p.contactId === contact.id);
+    if (existing) {
+      personIds.push(existing.id);
+      continue;
+    }
+    const newPerson = {
+      id: tempId(),
+      name: contact.name,
+      contactId: contact.id,
+      userId: null,
+      items: [{ id: tempId(), name: "", price: "", note: "" }],
+    };
+    newPersons.push(newPerson);
+    personIds.push(newPerson.id);
+  }
+
+  for (const name of newNames) {
+    const trimmed = name.trim().toLowerCase();
+    const existing = findExisting((p) => p.name.trim().toLowerCase() === trimmed);
+    if (existing) {
+      personIds.push(existing.id);
+      continue;
+    }
+    const newPerson = {
+      id: tempId(),
+      name,
+      contactId: null,
+      userId: null,
+      items: [{ id: tempId(), name: "", price: "", note: "" }],
+    };
+    newPersons.push(newPerson);
+    personIds.push(newPerson.id);
+  }
+
+  if (includeYou && currentUser) {
+    const existing = findExisting((p) => p.userId === currentUser.id);
+    if (existing) {
+      personIds.push(existing.id);
+    } else {
+      const newPerson = {
+        id: tempId(),
+        name: currentUser.name,
+        contactId: null,
+        userId: currentUser.id,
+        items: [{ id: tempId(), name: "", price: "", note: "" }],
+      };
+      newPersons.push(newPerson);
+      personIds.push(newPerson.id);
+    }
+  }
+
+  return { personIds: [...new Set(personIds)], newPersons };
+}
+
+// Same "Split with X and Y" label as the scan flow's AssignItemsPage, just
+// adapted to this page's sharedItems shape (personIds instead of assignedTo).
+function splitWithLabel(item, persons, currentPersonId, currentUserId) {
+  const others = item.personIds
+    .filter((id) => id !== currentPersonId)
+    .map((id) => {
+      const person = persons.find((p) => p.id === id);
+      return person ? getPersonDisplayName(person, currentUserId) : "someone";
+    });
+
+  if (others.length === 0) return null;
+  if (others.length <= 2) return `Split with ${others.join(" and ")}`;
+  return `Split with ${others[0]}, ${others[1]} +${others.length - 2}`;
 }
 
 export default function EditBillPage() {
@@ -52,8 +144,10 @@ export default function EditBillPage() {
   const [addPersonSheetOpen, setAddPersonSheetOpen] = useState(false);
   const [sharedItems, setSharedItems] = useState([]);
   const [sharedItemSheetOpen, setSharedItemSheetOpen] = useState(false);
+  const [editSplitTarget, setEditSplitTarget] = useState(null);
+  const [removePersonId, setRemovePersonId] = useState(null);
 
-  const [sheetMode, setSheetMode] = useState(null); // 'review' | 'abandon' | null
+  const [sheetMode, setSheetMode] = useState(null); // 'review' | 'abandon' | 'removePerson' | null
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -179,14 +273,29 @@ export default function EditBillPage() {
 
   function handleAddPersonConfirm({ contacts: selectedContacts, newNames, includeYou }) {
     let newPerson;
+    let existingMatch;
 
     if (includeYou && currentUser) {
+      existingMatch = persons.find((p) => p.userId === currentUser.id);
       newPerson = { name: currentUser.name, contactId: null, userId: currentUser.id };
     } else if (selectedContacts.length > 0) {
+      existingMatch = persons.find((p) => p.contactId === selectedContacts[0].id);
       newPerson = { name: selectedContacts[0].name, contactId: selectedContacts[0].id, userId: null };
     } else if (newNames.length > 0) {
+      const trimmed = newNames[0].trim().toLowerCase();
+      existingMatch = persons.find((p) => p.name.trim().toLowerCase() === trimmed);
       newPerson = { name: newNames[0], contactId: null, userId: null };
     } else {
+      setAddPersonSheetOpen(false);
+      return;
+    }
+
+    // Already on the bill (added earlier this session) — reuse them rather
+    // than minting a duplicate person for the same real person.
+    if (existingMatch) {
+      toast.error(
+        `${getPersonDisplayName(existingMatch, currentUser?.id)} is already on this bill.`
+      );
       setAddPersonSheetOpen(false);
       return;
     }
@@ -203,9 +312,56 @@ export default function EditBillPage() {
     setAddPersonSheetOpen(false);
   }
 
-  function removePerson(personId) {
-    haptic.light();
+  // Drops a person and cleans up any shared items they were part of — same
+  // filter-then-drop-if-empty logic as removeShare, since leaving orphaned
+  // personIds behind would silently inflate the remaining participants'
+  // calculated shares.
+  function removePersonAndCleanup(personId) {
     setPersons((prev) => prev.filter((p) => p.id !== personId));
+    setSharedItems((prev) =>
+      prev
+        .map((item) =>
+          item.personIds.includes(personId)
+            ? { ...item, personIds: item.personIds.filter((id) => id !== personId) }
+            : item
+        )
+        .filter((item) => item.personIds.length > 0)
+    );
+  }
+
+  // A person with real data (a valid individual item, or a share of a
+  // shared item) gets a confirmation before their items are deleted along
+  // with them — an empty/unused person card is removed immediately, same
+  // as before.
+  function removePerson(personId) {
+    const person = persons.find((p) => p.id === personId);
+    if (!person) return;
+
+    const hasValidItems = person.items.some(
+      (i) => i.name.trim() && parseFloat(i.price) > 0
+    );
+    const hasSharedParticipation = sharedItems.some((i) =>
+      i.personIds.includes(personId)
+    );
+
+    haptic.light();
+
+    if (!hasValidItems && !hasSharedParticipation) {
+      removePersonAndCleanup(personId);
+      return;
+    }
+
+    setRemovePersonId(personId);
+    setSheetMode("removePerson");
+    setSheetOpen(true);
+  }
+
+  function handleConfirmRemovePerson() {
+    if (!removePersonId) return;
+    haptic.medium();
+    removePersonAndCleanup(removePersonId);
+    setSheetOpen(false);
+    setRemovePersonId(null);
   }
 
   // ── Shared item management ──
@@ -222,35 +378,12 @@ export default function EditBillPage() {
     newNames,
     includeYou,
   }) {
-    const newPersonsFromContacts = selectedContacts.map((contact) => ({
-      id: tempId(),
-      name: contact.name,
-      contactId: contact.id,
-      userId: null,
-      items: [{ id: tempId(), name: "", price: "", note: "" }],
-    }));
-    const newPersonsFromNames = newNames.map((newName) => ({
-      id: tempId(),
-      name: newName,
-      contactId: null,
-      userId: null,
-      items: [{ id: tempId(), name: "", price: "", note: "" }],
-    }));
-    const newYouPerson =
-      includeYou && currentUser
-        ? [
-            {
-              id: tempId(),
-              name: currentUser.name,
-              contactId: null,
-              userId: currentUser.id,
-              items: [{ id: tempId(), name: "", price: "", note: "" }],
-            },
-          ]
-        : [];
-    const newPersons = [...newPersonsFromContacts, ...newPersonsFromNames, ...newYouPerson];
-
-    const personIds = [...existingPersonIds, ...newPersons.map((p) => p.id)];
+    const { personIds, newPersons } = resolvePersonSelection(persons, currentUser, {
+      existingPersonIds,
+      contacts: selectedContacts,
+      newNames,
+      includeYou,
+    });
 
     if (newPersons.length > 0) {
       setPersons((prev) => [...prev, ...newPersons]);
@@ -261,9 +394,147 @@ export default function EditBillPage() {
     setSharedItemSheetOpen(false);
   }
 
-  function removeSharedItem(itemId) {
+  // Removes just one person from a shared item's split — mirrors the scan
+  // flow's handleRemoveShare. If that leaves no one on it, drop the item
+  // entirely (unlike the scan flow, there's no "unassigned" bucket here to
+  // fall back to). Lightweight undo via a toast action rather than a
+  // confirmation dialog — losing a split is cheap to recover from, unlike
+  // removePerson's "their items get deleted" stakes.
+  function removeShare(itemId, personId) {
     haptic.light();
-    setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
+
+    const item = sharedItems.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const wasLastPerson = item.personIds.length <= 1;
+    const person = persons.find((p) => p.id === personId);
+    const personName = person ? getPersonDisplayName(person, currentUser?.id) : "";
+
+    setSharedItems((prev) =>
+      prev
+        .map((i) =>
+          i.id === itemId
+            ? { ...i, personIds: i.personIds.filter((id) => id !== personId) }
+            : i
+        )
+        .filter((i) => i.personIds.length > 0)
+    );
+
+    toast(`Removed "${item.name || "Item"}" from ${personName || "their"} split`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          haptic.light();
+          setSharedItems((prev) => {
+            const stillThere = prev.find((i) => i.id === itemId);
+            if (stillThere) {
+              if (stillThere.personIds.includes(personId)) return prev;
+              return prev.map((i) =>
+                i.id === itemId
+                  ? { ...i, personIds: [...i.personIds, personId] }
+                  : i
+              );
+            }
+            // The item was dropped entirely because this was its last
+            // person — restore it whole rather than re-adding a person to
+            // an item that no longer exists.
+            return wasLastPerson ? [...prev, item] : prev;
+          });
+        },
+      },
+    });
+  }
+
+  // ── Edit an item's split (chevron on an item row or a shared item row) ──
+  function openEditSplitForItem(item, person) {
+    haptic.light();
+    setEditSplitTarget({
+      item: {
+        id: item.id,
+        name: item.name,
+        price: parseFloat(item.price) || 0,
+        note: item.note,
+      },
+      initialPersonIds: [person.id],
+    });
+  }
+
+  function openEditSplitForSharedItem(item) {
+    haptic.light();
+    setEditSplitTarget({
+      item: { id: item.id, name: item.name, price: item.price, note: "" },
+      initialPersonIds: item.personIds,
+    });
+  }
+
+  // Moves the target item into a single person's items array (exactly one
+  // person selected) or into sharedItems (more than one) — removing it from
+  // wherever it currently lives first, so this works for both directions:
+  // converting a regular item into a shared one, and converting an
+  // already-shared item back down to a single owner. The item keeps its own
+  // id throughout (real DB id or temp id alike) so the save flow below can
+  // tell an existing item apart from a brand new one regardless of which
+  // array it currently sits in. Mirrors the scan flow's handleAssignCommit:
+  // the picker can also introduce people who aren't on the bill yet (from
+  // contacts, typed fresh, or YOU), which get created here alongside
+  // reassigning the item.
+  //
+  // item.price is always carried through unchanged — it's the item's fixed
+  // total, never recalculated off however many people end up sharing it.
+  // Each participant's share is a derived, display-time-only value
+  // (price / personIds.length) computed where it's shown, never stored.
+  function handleEditSplitConfirm({
+    existingPersonIds,
+    contacts: selectedContacts,
+    newNames,
+    includeYou,
+  }) {
+    const { item } = editSplitTarget;
+
+    const { personIds: selectedIds, newPersons } = resolvePersonSelection(
+      persons,
+      currentUser,
+      { existingPersonIds, contacts: selectedContacts, newNames, includeYou }
+    );
+
+    if (newPersons.length > 0) {
+      setPersons((prev) => [...prev, ...newPersons]);
+    }
+
+    setPersons((prev) =>
+      prev.map((p) => ({ ...p, items: p.items.filter((i) => i.id !== item.id) }))
+    );
+    setSharedItems((prev) => prev.filter((i) => i.id !== item.id));
+
+    if (selectedIds.length > 1) {
+      setSharedItems((prev) => [
+        ...prev,
+        { id: item.id, name: item.name, price: item.price, personIds: selectedIds },
+      ]);
+    } else {
+      const [onlyId] = selectedIds;
+      setPersons((prev) =>
+        prev.map((p) =>
+          p.id === onlyId
+            ? {
+                ...p,
+                items: [
+                  ...p.items,
+                  {
+                    id: item.id,
+                    name: item.name,
+                    price: String(item.price),
+                    note: item.note ?? "",
+                  },
+                ],
+              }
+            : p
+        )
+      );
+    }
+
+    setEditSplitTarget(null);
   }
 
   // ── Item management ──
@@ -281,8 +552,16 @@ export default function EditBillPage() {
     );
   }
 
+  // Lightweight undo via a toast action rather than a confirmation dialog —
+  // an individual item is quick to re-type, so it doesn't need the same
+  // "are you sure" gate as removePerson.
   function removeItem(personId, itemId) {
     haptic.light();
+
+    const person = persons.find((p) => p.id === personId);
+    const itemIndex = person ? person.items.findIndex((i) => i.id === itemId) : -1;
+    const removedItem = itemIndex > -1 ? person.items[itemIndex] : null;
+
     setPersons((prev) =>
       prev.map((p) =>
         p.id === personId
@@ -290,6 +569,27 @@ export default function EditBillPage() {
           : p
       )
     );
+
+    if (!removedItem) return;
+
+    toast(`Removed "${removedItem.name || "Item"}"`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          haptic.light();
+          setPersons((prev) =>
+            prev.map((p) => {
+              if (p.id !== personId) return p;
+              if (p.items.some((i) => i.id === itemId)) return p;
+              const items = [...p.items];
+              items.splice(Math.min(itemIndex, items.length), 0, removedItem);
+              return { ...p, items };
+            })
+          );
+        },
+      },
+    });
   }
 
   function updateItem(personId, itemId, field, value) {
@@ -308,16 +608,36 @@ export default function EditBillPage() {
   }
 
   // ── Derived totals ──
+  // Includes this person's share of any sharedItems they're part of — a
+  // shared item's full price is only counted once overall since each
+  // participant's share already sums back up to it (price / personIds.length
+  // times personIds.length), so grandTotal below doesn't need to add
+  // sharedItems separately.
   function personSubtotal(person) {
-    return person.items.reduce(
+    const individualTotal = person.items.reduce(
       (sum, item) => sum + (parseFloat(item.price) || 0),
       0
     );
+    const sharedTotal = sharedItems
+      .filter((i) => i.personIds.includes(person.id))
+      .reduce((sum, i) => sum + i.price / i.personIds.length, 0);
+    return individualTotal + sharedTotal;
   }
 
-  const sharedItemsTotal = sharedItems.reduce((sum, i) => sum + i.price, 0);
-  const grandTotal =
-    persons.reduce((sum, p) => sum + personSubtotal(p), 0) + sharedItemsTotal;
+  const grandTotal = persons.reduce((sum, p) => sum + personSubtotal(p), 0);
+
+  // Stats for the "Remove [name]?" confirmation sheet — re-derived from live
+  // state via the stored id rather than a snapshot, so they can't go stale.
+  const removePersonTarget = persons.find((p) => p.id === removePersonId) ?? null;
+  const removePersonItemCount = removePersonTarget
+    ? removePersonTarget.items.filter(
+        (i) => i.name.trim() && parseFloat(i.price) > 0
+      ).length +
+      sharedItems.filter((i) => i.personIds.includes(removePersonTarget.id)).length
+    : 0;
+  const removePersonAmount = removePersonTarget
+    ? personSubtotal(removePersonTarget)
+    : 0;
 
   const availableContacts = contacts.filter(
     (contact) => !persons.some((p) => p.contactId === contact.id)
@@ -398,9 +718,13 @@ export default function EditBillPage() {
     }
 
     const currentPersonIds = persons.map((p) => p.id).filter((id) => !isTempId(id));
-    const currentItemIds = persons
-      .flatMap((p) => p.items.map((i) => i.id))
-      .filter((id) => !isTempId(id));
+    // Includes sharedItems' ids too — an item converted to shared via the
+    // split editor keeps its real id, and would otherwise look deleted here
+    // since it's no longer in any person's individual items array.
+    const currentItemIds = [
+      ...persons.flatMap((p) => p.items.map((i) => i.id)),
+      ...sharedItems.map((i) => i.id),
+    ].filter((id) => !isTempId(id));
 
     // 2. Delete persons that existed before but were removed locally
     //    (cascade delete on the DB handles their items automatically)
@@ -474,14 +798,20 @@ export default function EditBillPage() {
           await supabase.from("items").insert(itemPayload);
         } else {
           await supabase.from("items").update(itemPayload).eq("id", item.id);
+          // This item may have previously been converted to a shared item
+          // (via the split editor) and back — drop any stale item_shares
+          // now that it's single-owner again.
+          await supabase.from("item_shares").delete().eq("item_id", item.id);
         }
       }
     }
 
-    // 5. Create shared items — person_id gets the first assignee (same RLS
-    // requirement as the scan flow), item_shares records every assignee.
-    // Shared items added in this editing session are always brand new, so
-    // this only ever inserts, never updates.
+    // 5. Create or update shared items — person_id gets the first assignee
+    // (same RLS requirement as the scan flow), item_shares records every
+    // assignee. A shared item added fresh this session has a temp id and is
+    // inserted; one converted from an existing single-person item (via the
+    // split editor) keeps its real id and is updated in place instead, with
+    // its item_shares rows replaced to match the current split.
     for (const sharedItem of sharedItems) {
       const realAssigneeIds = sharedItem.personIds
         .map((localId) => personIdMap.get(localId))
@@ -489,22 +819,42 @@ export default function EditBillPage() {
 
       if (realAssigneeIds.length === 0) continue;
 
-      const { data: createdItem, error: itemError } = await supabase
-        .from("items")
-        .insert({
-          name: sharedItem.name,
-          price: sharedItem.price,
-          person_id: realAssigneeIds[0],
-        })
-        .select()
-        .single();
+      let itemId = sharedItem.id;
 
-      if (itemError || !createdItem) continue;
+      if (isTempId(sharedItem.id)) {
+        const { data: createdItem, error: itemError } = await supabase
+          .from("items")
+          .insert({
+            name: sharedItem.name,
+            price: sharedItem.price,
+            person_id: realAssigneeIds[0],
+          })
+          .select()
+          .single();
+
+        if (itemError || !createdItem) continue;
+        itemId = createdItem.id;
+      } else {
+        const { error: itemError } = await supabase
+          .from("items")
+          .update({
+            name: sharedItem.name,
+            price: sharedItem.price,
+            note: null,
+            person_id: realAssigneeIds[0],
+          })
+          .eq("id", itemId);
+
+        if (itemError) continue;
+
+        // Replace any item_shares this item had before this edit.
+        await supabase.from("item_shares").delete().eq("item_id", itemId);
+      }
 
       if (realAssigneeIds.length > 1) {
         await supabase.from("item_shares").insert(
           realAssigneeIds.map((personId) => ({
-            item_id: createdItem.id,
+            item_id: itemId,
             person_id: personId,
           }))
         );
@@ -640,6 +990,54 @@ export default function EditBillPage() {
                       </label>
                       <div className="flex flex-col gap-2">
                         <AnimatePresence initial={false}>
+                          {sharedItems
+                            .filter((item) => item.personIds.includes(person.id))
+                            .map((item) => {
+                              const note = splitWithLabel(
+                                item,
+                                persons,
+                                person.id,
+                                currentUser?.id
+                              );
+                              const share = item.price / item.personIds.length;
+
+                              return (
+                                <motion.div
+                                  key={item.id}
+                                  initial={{ opacity: 0, y: 8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.96 }}
+                                  transition={{ duration: 0.2, ease: "easeOut" }}
+                                  onClick={() => openEditSplitForSharedItem(item)}
+                                  className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5 cursor-pointer transition-colors duration-150 active:bg-black/5"
+                                >
+                                  <div className="flex flex-col min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {item.name}
+                                    </p>
+                                    {note && (
+                                      <p className="text-xs text-text-secondary truncate">
+                                        {note}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <p className="text-sm font-semibold text-orange">
+                                      ₱{share.toFixed(2)}
+                                    </p>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeShare(item.id, person.id);
+                                      }}
+                                    >
+                                      <TrashIcon className="w-3.5 text-text-secondary/40" />
+                                    </button>
+                                    <ChevronRightIcon className="w-4 text-text-secondary/40" />
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
                           {person.items.map((item) => (
                             <motion.div
                               key={item.id}
@@ -647,11 +1045,13 @@ export default function EditBillPage() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.96 }}
                               transition={{ duration: 0.2, ease: "easeOut" }}
-                              className="border border-black/10 rounded-xl p-2.5 flex flex-col gap-2"
+                              onClick={() => openEditSplitForItem(item, person)}
+                              className="border border-black/10 rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-colors duration-150 active:bg-black/5"
                             >
                               <div className="flex items-center gap-2">
                                 <input
                                   value={item.name}
+                                  onClick={(e) => e.stopPropagation()}
                                   onChange={(e) =>
                                     updateItem(
                                       person.id,
@@ -669,6 +1069,7 @@ export default function EditBillPage() {
                                   </span>
                                   <input
                                     value={item.price}
+                                    onClick={(e) => e.stopPropagation()}
                                     onChange={(e) =>
                                       updateItem(
                                         person.id,
@@ -684,18 +1085,21 @@ export default function EditBillPage() {
                                 </div>
                                 {person.items.length > 1 && (
                                   <button
-                                    onClick={() =>
-                                      removeItem(person.id, item.id)
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeItem(person.id, item.id);
+                                    }}
                                     className="shrink-0"
                                   >
                                     <TrashIcon className="w-3.5 text-text-secondary/40" />
                                   </button>
                                 )}
+                                <ChevronRightIcon className="w-4 text-text-secondary/40 shrink-0" />
                               </div>
 
                               <input
                                 value={item.note}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) =>
                                   updateItem(
                                     person.id,
@@ -735,59 +1139,6 @@ export default function EditBillPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-
-              {/* Shared items */}
-              {sharedItems.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 flex flex-col gap-3">
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-                    Shared items
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <AnimatePresence initial={false}>
-                      {sharedItems.map((item) => {
-                        const names = item.personIds
-                          .map((id) => {
-                            const person = persons.find((p) => p.id === id);
-                            return person
-                              ? getPersonDisplayName(person, currentUser?.id)
-                              : null;
-                          })
-                          .filter(Boolean);
-
-                        return (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5"
-                          >
-                            <div className="flex flex-col min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {item.name}
-                              </p>
-                              {names.length > 0 && (
-                                <p className="text-xs text-text-secondary truncate">
-                                  Split with {names.join(", ")}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <p className="text-sm font-semibold text-orange">
-                                ₱{item.price.toFixed(2)}
-                              </p>
-                              <button onClick={() => removeSharedItem(item.id)}>
-                                <TrashIcon className="w-3.5 text-text-secondary/40" />
-                              </button>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
 
               {/* Add person */}
               <button
@@ -908,6 +1259,45 @@ export default function EditBillPage() {
                         </button>
                       </div>
                     </>
+                  ) : sheetMode === "removePerson" ? (
+                    <>
+                      <div className="flex flex-col gap-1 items-center text-center">
+                        <p className="font-display text-xl font-bold">
+                          Remove{" "}
+                          {removePersonTarget
+                            ? getPersonDisplayName(removePersonTarget, currentUser?.id)
+                            : "this person"}
+                          ?
+                        </p>
+                        <p className="text-text-secondary text-sm max-w-60">
+                          Their items ({removePersonItemCount} item(s), ₱
+                          {removePersonAmount.toFixed(2)}) will be deleted too.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 w-full items-center max-w-xl">
+                        <button
+                          onClick={handleConfirmRemovePerson}
+                          className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body"
+                          style={{
+                            background:
+                              "linear-gradient(to bottom, #2a2a2a, #1a1a1a)",
+                            borderBottom: "1.5px solid #0a0a0a",
+                          }}
+                        >
+                          Yes, remove
+                        </button>
+                        <button
+                          className="text-text-secondary font-body text-xs"
+                          onClick={() => {
+                            haptic.light();
+                            setSheetOpen(false);
+                            setRemovePersonId(null);
+                          }}
+                        >
+                          No, keep them
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="flex flex-col gap-1 items-center text-center">
@@ -969,6 +1359,20 @@ export default function EditBillPage() {
           showYou={showYou}
           onAdd={handleAddSharedItem}
           onClose={() => setSharedItemSheetOpen(false)}
+        />
+      )}
+
+      {editSplitTarget && (
+        <EditItemSplitSheet
+          key={editSplitTarget.item.id}
+          item={editSplitTarget.item}
+          persons={withDisplayNames(persons, currentUser?.id)}
+          contacts={availableContacts}
+          currentUser={currentUser}
+          showYou={showYou}
+          initialPersonIds={editSplitTarget.initialPersonIds}
+          onConfirm={handleEditSplitConfirm}
+          onClose={() => setEditSplitTarget(null)}
         />
       )}
     </>

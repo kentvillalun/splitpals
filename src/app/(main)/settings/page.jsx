@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
 import { Page } from "@/app/components/layout/Page";
 import { PageContent } from "@/app/components/layout/PageContent";
@@ -10,6 +12,8 @@ import { supabase } from "@/app/lib/supabase";
 import { haptic } from "@/app/lib/haptic";
 import {
   UserCircleIcon,
+  UserGroupIcon,
+  QuestionMarkCircleIcon,
   BellIcon,
   MoonIcon,
   PencilIcon,
@@ -45,6 +49,7 @@ function Toggle({ enabled, onToggle }) {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [draftName, setDraftName] = useState("");
@@ -54,6 +59,12 @@ export default function SettingsPage() {
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -124,6 +135,33 @@ export default function SettingsPage() {
       setSigningOut(false);
       return;
     }
+
+    haptic.success();
+    router.replace("../signup");
+  }
+
+  function openDeleteConfirm() {
+    haptic.light();
+    setDeleteConfirmOpen(true);
+  }
+
+  async function handleDeleteAccount() {
+    setIsDeleting(true);
+    haptic.medium();
+
+    const response = await fetch("/api/delete-account", { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      haptic.error();
+      toast.error(result.error || "Couldn't delete your account. Please try again.");
+      setIsDeleting(false);
+      return;
+    }
+
+    // The auth user (and everything cascading off it) is already gone
+    // server-side — this just clears the now-invalid local session.
+    await supabase.auth.signOut();
 
     haptic.success();
     router.replace("../signup");
@@ -222,6 +260,19 @@ export default function SettingsPage() {
                 <Card className="p-0! divide-y divide-black/5">
                   <button
                     className={menuItemClass}
+                    onClick={() => router.push("/settings/contacts")}
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserGroupIcon className="w-5 text-text-secondary" />
+                      <p className="text-sm font-medium text-text-primary">
+                        Manage contacts
+                      </p>
+                    </div>
+                    <ChevronRightIcon className="w-4 text-text-secondary/50" />
+                  </button>
+
+                  <button
+                    className={menuItemClass}
                     onClick={handleSignOut}
                     disabled={signingOut}
                   >
@@ -234,6 +285,27 @@ export default function SettingsPage() {
                     {signingOut && (
                       <div className="w-4 h-4 border-2 border-text-secondary/30 border-t-text-secondary rounded-full animate-spin" />
                     )}
+                  </button>
+                </Card>
+              </div>
+
+              {/* ── Help ── */}
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide px-1">
+                  Help
+                </p>
+                <Card className="p-0!">
+                  <button
+                    className={menuItemClass}
+                    onClick={() => router.push("/settings/faqs")}
+                  >
+                    <div className="flex items-center gap-3">
+                      <QuestionMarkCircleIcon className="w-5 text-text-secondary" />
+                      <p className="text-sm font-medium text-text-primary">
+                        FAQs
+                      </p>
+                    </div>
+                    <ChevronRightIcon className="w-4 text-text-secondary/50" />
                   </button>
                 </Card>
               </div>
@@ -319,10 +391,7 @@ export default function SettingsPage() {
                   Danger zone
                 </p>
                 <Card className="p-0!">
-                  <button
-                    className={menuItemClass}
-                    onClick={() => toast.info("Coming soon!")}
-                  >
+                  <button className={menuItemClass} onClick={openDeleteConfirm}>
                     <div className="flex items-center gap-3">
                       <TrashIcon className="w-5 text-red-500" />
                       <p className="text-sm font-medium text-red-500">
@@ -340,6 +409,84 @@ export default function SettingsPage() {
           </div>
         </PageContent>
       </Page>
+
+      {/* Delete account confirmation — same bottom-sheet pattern as the
+          "Abandon this bill?" / "Discard changes?" sheets on the bill pages */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {deleteConfirmOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{
+                    opacity: 0,
+                    transition: { duration: 0.15, ease: "easeIn" },
+                  }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="fixed inset-0 z-40 bg-black/40 font-body"
+                  onClick={() => !isDeleting && setDeleteConfirmOpen(false)}
+                />
+                <motion.div
+                  className="bg-white h-auto w-full flex flex-col items-center fixed bottom-0 rounded-t-4xl gap-6 pt-4 px-5 pb-17 z-50"
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{
+                    y: "100%",
+                    transition: { duration: 0.25, ease: "easeIn" },
+                  }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  drag={isDeleting ? false : "y"}
+                  dragConstraints={{ top: 0 }}
+                  dragElastic={{ top: 0, bottom: 0.2 }}
+                  onDragEnd={(_, info) => {
+                    if (!isDeleting && info.offset.y > 100) setDeleteConfirmOpen(false);
+                  }}
+                >
+                  <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
+
+                  <div className="flex flex-col gap-1 items-center text-center">
+                    <p className="font-display text-xl font-bold">
+                      Delete your account?
+                    </p>
+                    <p className="text-text-secondary text-sm max-w-60">
+                      This permanently deletes your bills, contacts, and
+                      account. This cannot be undone.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 w-full items-center max-w-xl">
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting}
+                      className="flex flex-row items-center justify-center w-full transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95 rounded-2xl py-4 gap-2 font-bold text-white font-body disabled:opacity-60"
+                      style={{
+                        background: "linear-gradient(to bottom, #2a2a2a, #1a1a1a)",
+                        borderBottom: "1.5px solid #0a0a0a",
+                      }}
+                    >
+                      {isDeleting && (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      )}
+                      {isDeleting ? "Deleting..." : "Yes, delete my account"}
+                    </button>
+                    <button
+                      className="text-text-secondary font-body text-xs"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        haptic.light();
+                        setDeleteConfirmOpen(false);
+                      }}
+                    >
+                      No, keep my account
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </>
   );
 }
