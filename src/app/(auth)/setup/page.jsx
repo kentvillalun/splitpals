@@ -83,7 +83,7 @@ export default function SetupPage() {
                   loading="eager"
                 />
 
-                <div className="aspect-square w-full absolute -right-4 top-10">
+                <div className=" w-full absolute -right-4 top-10">
                   <div className="flex flex-col items-start bg-white new-border absolute p-4 h-13 z-40 left-32 right-4 top-3.5 rounded-t-3xl rounded-br-3xl rounded-bl-sm">
                     <p className="absolute text-sm text-text-primary font-body font-semibold">
                       What should I call you?

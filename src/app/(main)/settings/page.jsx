@@ -144,11 +144,11 @@ export default function SettingsPage() {
 
     const response = await fetch("/api/delete-account", { method: "POST" });
     const rawBody = await response.text();
-    console.error("delete-account response:", {
-      status: response.status,
-      ok: response.ok,
-      body: rawBody,
-    });
+    // console.error("delete-account response:", {
+    //   status: response.status,
+    //   ok: response.ok,
+    //   body: rawBody,
+    // });
 
     let result = {};
     try {
