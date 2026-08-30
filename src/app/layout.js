@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono, Baloo_2, Plus_Jakarta_Sans, Courier_Prime } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 
 const geistSans = Geist({
@@ -52,6 +53,7 @@ export default function RootLayout({ children }) {
       <body className="flex flex-col overflow-auto antialiased">
         <Toaster position="top"/>
         {children}
+        <Analytics />
       </body>
     </html>
   );
