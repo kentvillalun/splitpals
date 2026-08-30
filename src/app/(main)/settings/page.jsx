@@ -143,7 +143,19 @@ export default function SettingsPage() {
     setIsDeleting(true);
 
     const response = await fetch("/api/delete-account", { method: "POST" });
-    const result = await response.json().catch(() => ({}));
+    const rawBody = await response.text();
+    console.error("delete-account response:", {
+      status: response.status,
+      ok: response.ok,
+      body: rawBody,
+    });
+
+    let result = {};
+    try {
+      result = JSON.parse(rawBody);
+    } catch (parseErr) {
+      console.error("delete-account response: failed to parse JSON body", parseErr);
+    }
 
     if (!response.ok) {
       toast.error(result.error || "Couldn't delete your account. Please try again.");
