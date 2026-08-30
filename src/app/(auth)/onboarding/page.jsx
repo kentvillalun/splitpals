@@ -279,6 +279,7 @@ export default function OnboardingPage() {
                           <button
                             className="flex flex-row items-center gap-2 text-orange font-semibold text-sm border-dashed w-full border rounded-xl py-2.5 px-3 bg-orange/10 transition-all active:scale-95 duration-200 ease-in-out hover:cursor-pointer hover:bg-orange/20 disabled:opacity-35 disabled:pointer-events-none"
                             disabled={allRevealed === true}
+                            ref={hapticTrigger}
                             onClick={() => {
                               setRevealCount((prev) => prev + 1);
                             }}
@@ -677,6 +678,7 @@ export default function OnboardingPage() {
                       onClick={() => {
                         setCurrentStep((prev) => prev + 1);
                       }}
+                      ref={hapticTrigger}
                     >
                       <p className="font-bold text-sm text-white">
                         Next — Split the bill
@@ -710,6 +712,7 @@ export default function OnboardingPage() {
                       onClick={() => {
                         setCurrentStep((prev) => prev + 1);
                       }}
+                      ref={hapticTrigger}
                       disabled={allPersonsRevealed === false}
                     >
                       <p className="font-bold text-sm text-white">
