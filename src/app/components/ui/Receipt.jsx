@@ -20,7 +20,10 @@ import { getPersonDisplayName } from "@/app/lib/displayName";
  * Props:
  * - billName: string
  * - date: string (formatted)
- * - persons: [{ id, name, user_id, is_paid, items: [{ id, name, price }] }]
+ * - persons: [{ id, name, user_id, is_paid, items: [{ id, name, price, note? }] }]
+ *   `note` (optional) is a "Split with X" label for a shared item's divided
+ *   share — callers expand a shared item into one entry per participant
+ *   before passing it in; see expandSharedItems.
  * - currentUserId: string | null — whose row (if any) should read "YOU" in the live UI
  * - onTogglePaid: (personId, nextValue) => Promise<void> | void  (optional — omit for read-only/creation preview)
  * - readOnly: boolean — hides mark-as-paid + share buttons (used in creation flow preview)
@@ -161,17 +164,21 @@ export function Receipt({
                   )}
                 </div>
 
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-1">
                   {person.items?.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-baseline gap-3"
-                    >
-                      <p className="truncate">{item.name}</p>
-                      <p className="font-bold shrink-0">
-                        <span className="font-body">₱</span>
-                        {item.price.toFixed(2)}
-                      </p>
+                    <div key={item.id} className="flex flex-col gap-0">
+                      <div className="flex justify-between items-baseline gap-3">
+                        <p className="truncate">{item.name}</p>
+                        <p className="font-bold shrink-0">
+                          <span className="font-body">₱</span>
+                          {item.price.toFixed(2)}
+                        </p>
+                      </div>
+                      {item.note && (
+                        <p className="text-[10px] text-text-secondary/70 truncate">
+                          {item.note}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -323,17 +330,21 @@ export function Receipt({
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-1">
                     {person.items?.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex justify-between items-baseline gap-3"
-                      >
-                        <p className="truncate">{item.name}</p>
-                        <p className="font-bold shrink-0">
-                          <span className="font-body">₱</span>
-                          {item.price.toFixed(2)}
-                        </p>
+                      <div key={item.id} className="flex flex-col gap-0">
+                        <div className="flex justify-between items-baseline gap-3">
+                          <p className="truncate">{item.name}</p>
+                          <p className="font-bold shrink-0">
+                            <span className="font-body">₱</span>
+                            {item.price.toFixed(2)}
+                          </p>
+                        </div>
+                        {item.note && (
+                          <p className="text-[10px] text-text-secondary/70 truncate">
+                            {item.note}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -428,17 +439,21 @@ export function Receipt({
                   {person.name}
                 </p>
 
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-1">
                   {person.items?.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-baseline gap-3"
-                    >
-                      <p className="truncate">{item.name}</p>
-                      <p className="font-bold shrink-0">
-                        <span className="font-body">₱</span>
-                        {item.price.toFixed(2)}
-                      </p>
+                    <div key={item.id} className="flex flex-col gap-0">
+                      <div className="flex justify-between items-baseline gap-3">
+                        <p className="truncate">{item.name}</p>
+                        <p className="font-bold shrink-0">
+                          <span className="font-body">₱</span>
+                          {item.price.toFixed(2)}
+                        </p>
+                      </div>
+                      {item.note && (
+                        <p className="text-[10px] text-text-secondary/70 truncate">
+                          {item.note}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

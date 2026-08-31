@@ -183,7 +183,7 @@ export default function EditBillPage() {
       const { data: bill, error } = await supabase
         .from("bills")
         .select(
-          `id, name, persons (id, name, is_paid, contact_id, user_id, items (id, name, price, note))`
+          `id, name, persons (id, name, is_paid, contact_id, user_id, items (id, name, price, note, item_shares(person_id)))`
         )
         .eq("id", billId)
         .single();
@@ -197,28 +197,58 @@ export default function EditBillPage() {
       setBillName(bill.name);
       setDraftBillName(bill.name);
 
-      const loadedPersons = (bill.persons ?? []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        isPaid: p.is_paid,
-        contactId: p.contact_id ?? null,
-        userId: p.user_id ?? null,
-        items:
-          p.items && p.items.length > 0
-            ? p.items.map((i) => ({
-                id: i.id,
-                name: i.name,
-                price: String(i.price),
-                note: i.note ?? "",
-              }))
-            : [{ id: tempId(), name: "", price: "", note: "" }],
-      }));
+      // An item with 2+ item_shares rows is genuinely shared — it's nested
+      // here under its "owner" person only (items.person_id, the first
+      // assignee — see the save flow's step 5 comment), so it's pulled out
+      // into loadedSharedItems instead of that person's individual items.
+      // Without this split, a previously-shared item would load as a plain
+      // single-owner item, and saving the bill again would then delete its
+      // real item_shares rows via the individual-item cleanup below,
+      // silently destroying the split.
+      const loadedSharedItems = [];
+
+      const loadedPersons = (bill.persons ?? []).map((p) => {
+        const individualItems = [];
+
+        for (const i of p.items ?? []) {
+          const sharerIds = (i.item_shares ?? []).map((s) => s.person_id);
+          if (sharerIds.length > 1) {
+            loadedSharedItems.push({
+              id: i.id,
+              name: i.name,
+              price: i.price,
+              personIds: sharerIds,
+            });
+            continue;
+          }
+          individualItems.push({
+            id: i.id,
+            name: i.name,
+            price: String(i.price),
+            note: i.note ?? "",
+          });
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          isPaid: p.is_paid,
+          contactId: p.contact_id ?? null,
+          userId: p.user_id ?? null,
+          items:
+            individualItems.length > 0
+              ? individualItems
+              : [{ id: tempId(), name: "", price: "", note: "" }],
+        };
+      });
 
       setPersons(loadedPersons);
+      setSharedItems(loadedSharedItems);
       setOriginalPersonIds(loadedPersons.map((p) => p.id));
-      setOriginalItemIds(
-        loadedPersons.flatMap((p) => p.items.map((i) => i.id))
-      );
+      setOriginalItemIds([
+        ...loadedPersons.flatMap((p) => p.items.map((i) => i.id)),
+        ...loadedSharedItems.map((i) => i.id),
+      ]);
 
       setIsLoading(false);
     }
@@ -995,33 +1025,34 @@ export default function EditBillPage() {
                                   exit={{ opacity: 0, scale: 0.96 }}
                                   transition={{ duration: 0.2, ease: "easeOut" }}
                                   onClick={() => openEditSplitForSharedItem(item)}
-                                  className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5 cursor-pointer transition-colors duration-150 active:bg-black/5"
+                                  className="border border-black/10 rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-colors duration-150 active:bg-black/5"
                                 >
-                                  <div className="flex flex-col min-w-0">
-                                    <p className="text-sm font-medium truncate">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-sm font-medium truncate min-w-0 flex-1">
                                       {item.name}
                                     </p>
-                                    {note && (
-                                      <p className="text-xs text-text-secondary truncate">
-                                        {note}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <p className="text-sm font-semibold text-orange">
+                                        ₱{share.toFixed(2)}
                                       </p>
-                                    )}
+                                      <button
+                                        ref={hapticTrigger}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeShare(item.id, person.id);
+                                        }}
+                                      >
+                                        <TrashIcon className="w-3.5 text-text-secondary/40" />
+                                      </button>
+                                      <ChevronRightIcon className="w-4 text-text-secondary/40" />
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <p className="text-sm font-semibold text-orange">
-                                      ₱{share.toFixed(2)}
+
+                                  {note && (
+                                    <p className="text-xs text-text-secondary truncate bg-black/2 rounded-lg px-2 py-1.5">
+                                      {note}
                                     </p>
-                                    <button
-                                      ref={hapticTrigger}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeShare(item.id, person.id);
-                                      }}
-                                    >
-                                      <TrashIcon className="w-3.5 text-text-secondary/40" />
-                                    </button>
-                                    <ChevronRightIcon className="w-4 text-text-secondary/40" />
-                                  </div>
+                                  )}
                                 </motion.div>
                               );
                             })}

@@ -11,6 +11,7 @@ import { supabase } from "@/app/lib/supabase";
 import { hapticTrigger } from "ios-haptics";
 import { Receipt } from "@/app/components/ui/Receipt";
 import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
+import { expandSharedItems } from "@/app/lib/expandSharedItems";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Image from "next/image";
@@ -38,10 +39,13 @@ function ReceiptPageContent() {
   } = useFetch({
     table: "bills",
     filters: billId ? { id: billId } : {},
-    select: `id, name, created_at, persons (id, name, is_paid, user_id, items(id, name, price))`,
+    select: `id, name, created_at, persons (id, name, is_paid, user_id, items(id, name, price, item_shares(person_id)))`,
   });
 
   const bill = bills?.[0];
+  const expandedPersons = bill
+    ? expandSharedItems(bill.persons ?? [], currentUser?.id)
+    : [];
 
   async function handleTogglePaid(personId, nextValue) {
     const { error } = await supabase
@@ -181,7 +185,7 @@ function ReceiptPageContent() {
                   <Receipt
                     billName={bill.name}
                     date={formatDate(bill.created_at)}
-                    persons={bill.persons ?? []}
+                    persons={expandedPersons}
                     currentUserId={currentUser?.id}
                     onTogglePaid={handleTogglePaid}
                   />

@@ -822,33 +822,34 @@ export default function NewBillPage() {
                                   exit={{ opacity: 0, scale: 0.96 }}
                                   transition={{ duration: 0.2, ease: "easeOut" }}
                                   onClick={() => openEditSplitForSharedItem(item)}
-                                  className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5 cursor-pointer transition-colors duration-150 active:bg-black/5"
+                                  className="border border-black/10 rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-colors duration-150 active:bg-black/5"
                                 >
-                                  <div className="flex flex-col min-w-0">
-                                    <p className="text-sm font-medium truncate">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-sm font-medium truncate min-w-0 flex-1">
                                       {item.name}
                                     </p>
-                                    {note && (
-                                      <p className="text-xs text-text-secondary truncate">
-                                        {note}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <p className="text-sm font-semibold text-orange">
+                                        ₱{share.toFixed(2)}
                                       </p>
-                                    )}
+                                      <button
+                                        ref={hapticTrigger}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeShare(item.id, person.id);
+                                        }}
+                                      >
+                                        <TrashIcon className="w-3.5 text-text-secondary/40" />
+                                      </button>
+                                      <ChevronRightIcon className="w-4 text-text-secondary/40" />
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <p className="text-sm font-semibold text-orange">
-                                      ₱{share.toFixed(2)}
+
+                                  {note && (
+                                    <p className="text-xs text-text-secondary truncate bg-black/2 rounded-lg px-2 py-1.5">
+                                      {note}
                                     </p>
-                                    <button
-                                      ref={hapticTrigger}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeShare(item.id, person.id);
-                                      }}
-                                    >
-                                      <TrashIcon className="w-3.5 text-text-secondary/40" />
-                                    </button>
-                                    <ChevronRightIcon className="w-4 text-text-secondary/40" />
-                                  </div>
+                                  )}
                                 </motion.div>
                               );
                             })}

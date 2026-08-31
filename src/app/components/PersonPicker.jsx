@@ -148,6 +148,12 @@ export function PersonPicker({
 
   return (
     <div className="font-body flex flex-col items-start w-full gap-4 max-h-[70vh] overflow-y-auto">
+      {!isSingle && (
+        <p className="text-xs text-text-secondary bg-orange-tint/60 rounded-xl px-3 py-2 w-full">
+          Tip: Select more than one person to split this item between them.
+        </p>
+      )}
+
       {(persons.length > 0 || (showYou && currentUser)) && (
         <div className="flex flex-col gap-2 w-full">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
@@ -231,7 +237,7 @@ export function PersonPicker({
           </button>
         </div>
         <p className="text-xs text-text-secondary">
-          Tip: use the exact same spelling next time so it's recognized as
+          Tip: Use the exact same spelling next time so it's recognized as
           the same person.
         </p>
       </div>
