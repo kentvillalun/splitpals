@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const BottomSheet = ({ children, setSheetOpen }) => {
+export const BottomSheet = ({ children, setSheetOpen, sheetClassName = "pb-0" }) => { // Dont touch this, this is intentional
   return createPortal(
     <AnimatePresence>
       <motion.div
@@ -17,7 +17,7 @@ export const BottomSheet = ({ children, setSheetOpen }) => {
       />
       <motion.div
         key={"content"}
-        className="bg-white h-auto w-full flex flex-col items-center justify-between fixed bottom-0 rounded-t-4xl gap-6 pt-4 px-5  pb-17 z-50 lg:hidden"
+        className={`bg-white h-auto w-full flex flex-col items-center justify-between fixed bottom-0 rounded-t-4xl gap-6 pt-4 px-5 z-50 lg:hidden ${sheetClassName}`}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{

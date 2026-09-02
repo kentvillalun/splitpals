@@ -14,7 +14,7 @@ export const AssignItemSheet = ({
   initialPersonIds = [],
 }) => {
   return (
-    <BottomSheet setSheetOpen={onClose}>
+    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0">
       <div className="flex flex-col items-start w-full gap-4 font-body">
         <div className="flex flex-col">
           <h1 className="font-display text-text-primary text-xl font-bold">

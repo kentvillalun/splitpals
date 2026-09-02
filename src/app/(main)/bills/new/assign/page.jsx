@@ -54,6 +54,9 @@ export default function AssignItemsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [assigningItem, setAssigningItem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Keyed by item id — holds the raw text of a price being typed so partial
+  // input like "12." isn't clobbered by reformatting on every keystroke.
+  const [priceDrafts, setPriceDrafts] = useState({});
 
   useEffect(() => {
     setMounted(true);
@@ -207,6 +210,34 @@ export default function AssignItemsPage() {
           : item
       )
     );
+  }
+
+  // The price shown/edited on an item's row is always "price per sharer" —
+  // for an unassigned item that's just the price itself (divisor 1), so the
+  // same input works for both the unassigned list and each person's rows.
+  function handlePriceInput(item, value) {
+    if (/^\d*\.?\d{0,2}$/.test(value)) {
+      setPriceDrafts((prev) => ({ ...prev, [item.id]: value }));
+    }
+  }
+
+  function commitPriceEdit(item) {
+    const draft = priceDrafts[item.id];
+    if (draft !== undefined) {
+      const parsed = parseFloat(draft);
+      if (!Number.isNaN(parsed) && parsed >= 0) {
+        const divisor = item.assignedTo.length || 1;
+        const newPrice = parsed * divisor;
+        setItems((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, price: newPrice } : i))
+        );
+      }
+    }
+    setPriceDrafts((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
   }
 
   function personSubtotal(personId) {
@@ -421,9 +452,26 @@ export default function AssignItemsPage() {
                             <p className="text-sm font-medium truncate">
                               {item.name}
                             </p>
-                            <p className="text-xs text-text-secondary">
-                              ₱{item.price.toFixed(2)}
-                            </p>
+                            <div className="flex items-center gap-0.5">
+                              <span className="text-xs text-text-secondary">
+                                ₱
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                  priceDrafts[item.id] ?? item.price.toFixed(2)
+                                }
+                                onChange={(e) =>
+                                  handlePriceInput(item, e.target.value)
+                                }
+                                onBlur={() => commitPriceEdit(item)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") e.target.blur();
+                                }}
+                                className="w-14 text-xs text-text-secondary bg-transparent border-b border-dashed border-black/20 focus:border-orange focus:outline-none"
+                              />
+                            </div>
                           </div>
                           <button
                             onClick={() => handleAssignTap(item)}
@@ -510,9 +558,28 @@ export default function AssignItemsPage() {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <p className="text-sm font-semibold text-orange">
-                                      ₱{share.toFixed(2)}
-                                    </p>
+                                    <div className="flex items-center gap-0.5">
+                                      <span className="text-sm font-semibold text-orange">
+                                        ₱
+                                      </span>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={
+                                          priceDrafts[item.id] ??
+                                          share.toFixed(2)
+                                        }
+                                        onChange={(e) =>
+                                          handlePriceInput(item, e.target.value)
+                                        }
+                                        onBlur={() => commitPriceEdit(item)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") e.target.blur();
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-14 text-sm font-semibold text-orange bg-transparent border-b border-dashed border-orange/30 focus:border-orange focus:outline-none"
+                                      />
+                                    </div>
                                     <button
                                       ref={hapticTrigger}
                                       onClick={(e) => {

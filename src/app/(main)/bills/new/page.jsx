@@ -136,6 +136,11 @@ export default function NewBillPage() {
   const [contacts, setContacts] = useState([]);
   const [addPersonSheetOpen, setAddPersonSheetOpen] = useState(false);
   const [sharedItems, setSharedItems] = useState([]);
+  // Shared items that lost every participant (via removeShare) land here
+  // instead of being deleted outright — same "Unassigned" bucket as the scan
+  // flow's AssignItemsPage. Save/Review stays blocked while anything is in
+  // here, so an unassigned item never needs to be persisted (see hasValidItem).
+  const [unassignedItems, setUnassignedItems] = useState([]);
   const [sharedItemSheetOpen, setSharedItemSheetOpen] = useState(false);
   const [editSplitTarget, setEditSplitTarget] = useState(null);
   const [removePersonId, setRemovePersonId] = useState(null);
@@ -244,11 +249,25 @@ export default function NewBillPage() {
     setAddPersonSheetOpen(false);
   }
 
-  // Drops a person and cleans up any shared items they were part of — same
-  // filter-then-drop-if-empty logic as removeShare, since leaving orphaned
-  // personIds behind would silently inflate the remaining participants'
-  // calculated shares.
+  // Drops a person and cleans up any shared items they were part of. A shared
+  // item that still has 2+ people left just shrinks its personIds. One that
+  // drops to a single remaining person is converted to that person's
+  // individual item (same convention as handleEditSplitConfirm below) rather
+  // than being left alive in sharedItems at its full, unsplit price — leaving
+  // it there would silently double the remaining person's total once a new
+  // item is added later. One that drops to zero remaining people really is
+  // gone (this person's removal is an explicit, confirmed deletion — see
+  // removePerson below — unlike removeShare, which parks orphaned items in
+  // Unassigned instead of deleting them).
   function removePersonAndCleanup(personId) {
+    const orphanedToSingle = sharedItems
+      .filter((item) => item.personIds.includes(personId))
+      .map((item) => ({
+        item,
+        remainingIds: item.personIds.filter((id) => id !== personId),
+      }))
+      .filter(({ remainingIds }) => remainingIds.length === 1);
+
     setPersons((prev) => prev.filter((p) => p.id !== personId));
     setSharedItems((prev) =>
       prev
@@ -257,8 +276,30 @@ export default function NewBillPage() {
             ? { ...item, personIds: item.personIds.filter((id) => id !== personId) }
             : item
         )
-        .filter((item) => item.personIds.length > 0)
+        .filter((item) => item.personIds.length > 1)
     );
+
+    for (const { item, remainingIds } of orphanedToSingle) {
+      const [onlyId] = remainingIds;
+      setPersons((prev) =>
+        prev.map((p) =>
+          p.id === onlyId
+            ? {
+                ...p,
+                items: [
+                  ...p.items,
+                  {
+                    id: item.id,
+                    name: item.name,
+                    price: String(item.price),
+                    note: "",
+                  },
+                ],
+              }
+            : p
+        )
+      );
+    }
   }
 
   // A person with real data (a valid individual item, or a share of a
@@ -322,49 +363,93 @@ export default function NewBillPage() {
   }
 
   // Removes just one person from a shared item's split — mirrors the scan
-  // flow's handleRemoveShare. If that leaves no one on it, drop the item
-  // entirely (unlike the scan flow, there's no "unassigned" bucket here to
-  // fall back to). Lightweight undo via a toast action rather than a
-  // confirmation dialog — losing a split is cheap to recover from, unlike
-  // removePerson's "their items get deleted" stakes.
+  // flow's handleRemoveShare. What happens to the item next depends on how
+  // many people are left:
+  //  - 2+ remaining: still genuinely shared, just shrinks personIds.
+  //  - 1 remaining: no longer a split — converted into that person's
+  //    individual item (same convention as handleEditSplitConfirm) instead of
+  //    surviving in sharedItems at its full, unsplit price. Leaving it there
+  //    was the root cause of a bug where a "removed" shared item silently
+  //    kept charging the remaining person its full price, double-counted
+  //    alongside any new item added afterward.
+  //  - 0 remaining: parked in Unassigned rather than deleted, since this is a
+  //    lightweight, undo-able action rather than a confirmed deletion.
+  // Lightweight undo via a toast action rather than a confirmation dialog —
+  // losing a split is cheap to recover from, unlike removePerson's "their
+  // items get deleted" stakes.
   function removeShare(itemId, personId) {
     const item = sharedItems.find((i) => i.id === itemId);
     if (!item) return;
 
-    const wasLastPerson = item.personIds.length <= 1;
+    const remainingIds = item.personIds.filter((id) => id !== personId);
     const person = persons.find((p) => p.id === personId);
     const personName = person ? getPersonDisplayName(person, currentUser?.id) : "";
 
-    setSharedItems((prev) =>
-      prev
-        .map((i) =>
-          i.id === itemId
-            ? { ...i, personIds: i.personIds.filter((id) => id !== personId) }
-            : i
+    if (remainingIds.length >= 2) {
+      setSharedItems((prev) =>
+        prev.map((i) => (i.id === itemId ? { ...i, personIds: remainingIds } : i))
+      );
+    } else if (remainingIds.length === 1) {
+      const [onlyId] = remainingIds;
+      setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
+      setPersons((prev) =>
+        prev.map((p) =>
+          p.id === onlyId
+            ? {
+                ...p,
+                items: [
+                  ...p.items,
+                  { id: item.id, name: item.name, price: String(item.price), note: "" },
+                ],
+              }
+            : p
         )
-        .filter((i) => i.personIds.length > 0)
-    );
+      );
+    } else {
+      setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
+      setUnassignedItems((prev) => [
+        ...prev,
+        { id: item.id, name: item.name, price: item.price },
+      ]);
+    }
 
     toast(`Removed "${item.name || "Item"}" from ${personName || "their"} split`, {
       duration: 5000,
       action: {
         label: "Undo",
         onClick: () => {
-          setSharedItems((prev) => {
-            const stillThere = prev.find((i) => i.id === itemId);
-            if (stillThere) {
-              if (stillThere.personIds.includes(personId)) return prev;
+          if (remainingIds.length >= 2) {
+            setSharedItems((prev) => {
+              const current = prev.find((i) => i.id === itemId);
+              if (!current || current.personIds.includes(personId)) return prev;
               return prev.map((i) =>
-                i.id === itemId
-                  ? { ...i, personIds: [...i.personIds, personId] }
-                  : i
+                i.id === itemId ? { ...i, personIds: [...i.personIds, personId] } : i
               );
-            }
-            // The item was dropped entirely because this was its last
-            // person — restore it whole rather than re-adding a person to
-            // an item that no longer exists.
-            return wasLastPerson ? [...prev, item] : prev;
-          });
+            });
+          } else if (remainingIds.length === 1) {
+            const [onlyId] = remainingIds;
+            setPersons((prev) => {
+              const owner = prev.find((p) => p.id === onlyId);
+              if (!owner?.items.some((i) => i.id === itemId)) return prev;
+              return prev.map((p) =>
+                p.id === onlyId
+                  ? { ...p, items: p.items.filter((i) => i.id !== itemId) }
+                  : p
+              );
+            });
+            setSharedItems((prev) =>
+              prev.some((i) => i.id === itemId) ? prev : [...prev, item]
+            );
+          } else {
+            setUnassignedItems((prev) =>
+              prev.some((i) => i.id === itemId)
+                ? prev.filter((i) => i.id !== itemId)
+                : prev
+            );
+            setSharedItems((prev) =>
+              prev.some((i) => i.id === itemId) ? prev : [...prev, item]
+            );
+          }
         },
       },
     });
@@ -387,6 +472,34 @@ export default function NewBillPage() {
     setEditSplitTarget({
       item: { id: item.id, name: item.name, price: item.price, note: "" },
       initialPersonIds: item.personIds,
+    });
+  }
+
+  function openEditSplitForUnassignedItem(item) {
+    setEditSplitTarget({
+      item: { id: item.id, name: item.name, price: item.price, note: "" },
+      initialPersonIds: [],
+    });
+  }
+
+  // No confirmation dialog — matches removeItem's "lightweight undo" pattern,
+  // since an unassigned item has no one relying on it yet.
+  function removeUnassignedItem(itemId) {
+    const removedItem = unassignedItems.find((i) => i.id === itemId);
+    if (!removedItem) return;
+
+    setUnassignedItems((prev) => prev.filter((i) => i.id !== itemId));
+
+    toast(`Removed "${removedItem.name || "Item"}"`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setUnassignedItems((prev) =>
+            prev.some((i) => i.id === itemId) ? prev : [...prev, removedItem]
+          );
+        },
+      },
     });
   }
 
@@ -425,6 +538,7 @@ export default function NewBillPage() {
       prev.map((p) => ({ ...p, items: p.items.filter((i) => i.id !== item.id) }))
     );
     setSharedItems((prev) => prev.filter((i) => i.id !== item.id));
+    setUnassignedItems((prev) => prev.filter((i) => i.id !== item.id));
 
     if (selectedIds.length > 1) {
       setSharedItems((prev) => [
@@ -473,6 +587,13 @@ export default function NewBillPage() {
   // Lightweight undo via a toast action rather than a confirmation dialog —
   // an individual item is quick to re-type, so it doesn't need the same
   // "are you sure" gate as removePerson.
+  //
+  // An individual item only ever has one owner, so removing it here is
+  // always that item's sole connection to anyone — same as removeShare's
+  // last-person case — so a *valid* one (real name + price, not an empty
+  // draft row) is parked in Unassigned instead of being lost outright. An
+  // invalid/blank row (e.g. the default empty item a new person starts
+  // with) has nothing worth preserving, so it's just dropped as before.
   function removeItem(personId, itemId) {
     const person = persons.find((p) => p.id === personId);
     const itemIndex = person ? person.items.findIndex((i) => i.id === itemId) : -1;
@@ -488,11 +609,29 @@ export default function NewBillPage() {
 
     if (!removedItem) return;
 
+    const isValid = Boolean(
+      removedItem.name.trim() && parseFloat(removedItem.price) > 0
+    );
+
+    if (isValid) {
+      setUnassignedItems((prev) => [
+        ...prev,
+        { id: removedItem.id, name: removedItem.name, price: parseFloat(removedItem.price) },
+      ]);
+    }
+
     toast(`Removed "${removedItem.name || "Item"}"`, {
       duration: 5000,
       action: {
         label: "Undo",
         onClick: () => {
+          if (isValid) {
+            setUnassignedItems((prev) =>
+              prev.some((i) => i.id === itemId)
+                ? prev.filter((i) => i.id !== itemId)
+                : prev
+            );
+          }
           setPersons((prev) =>
             prev.map((p) => {
               if (p.id !== personId) return p;
@@ -539,7 +678,15 @@ export default function NewBillPage() {
     return individualTotal + sharedTotal;
   }
 
-  const grandTotal = persons.reduce((sum, p) => sum + personSubtotal(p), 0);
+  // Unassigned items have no owner yet, but their price is still a real part
+  // of the bill's total — otherwise the grand total would silently shrink
+  // whenever an item lands in Unassigned, then jump back up once assigned.
+  const unassignedTotal = unassignedItems.reduce(
+    (sum, item) => sum + (parseFloat(item.price) || 0),
+    0
+  );
+  const grandTotal =
+    persons.reduce((sum, p) => sum + personSubtotal(p), 0) + unassignedTotal;
 
   // Stats for the "Remove [name]?" confirmation sheet — re-derived from live
   // state via the stored id rather than a snapshot, so they can't go stale.
@@ -574,14 +721,16 @@ export default function NewBillPage() {
 
   // ── Validation — at least 1 person with at least 1 named, priced item, or
   // at least 1 shared item (which is always valid — name/price/participants
-  // are all required to confirm the Add Shared Item sheet) — and every
-  // person on the bill has something assigned to them ──
+  // are all required to confirm the Add Shared Item sheet) — every person on
+  // the bill has something assigned to them — and nothing is sitting in
+  // Unassigned (same canReview gate as the scan flow's AssignItemsPage) ──
   const hasValidItem =
     (persons.some((p) =>
       p.items.some((i) => i.name.trim() && parseFloat(i.price) > 0)
     ) ||
       sharedItems.length > 0) &&
-    !persons.some(personHasNoItems);
+    !persons.some(personHasNoItems) &&
+    unassignedItems.length === 0;
 
   // ── Save flow ──
   function handleReviewTap() {
@@ -590,6 +739,10 @@ export default function NewBillPage() {
       toast.error(
         `${getPersonDisplayName(personWithNoItems, currentUser?.id)} has no items assigned — remove them or assign something first.`
       );
+      return;
+    }
+    if (unassignedItems.length > 0) {
+      toast.error("Assign every item to someone before continuing.");
       return;
     }
     if (!hasValidItem) {
@@ -710,6 +863,7 @@ export default function NewBillPage() {
   const hasUnsavedProgress =
     persons.length > 1 ||
     sharedItems.length > 0 ||
+    unassignedItems.length > 0 ||
     persons.some((p) => p.items.some((i) => i.name.trim()));
 
   function handleCancelTap() {
@@ -766,6 +920,53 @@ export default function NewBillPage() {
             <div className="h-23.5" />
 
             <div className="max-w-xl mx-auto w-full px-4 flex flex-col gap-4 pb-32 -mt-5">
+              {/* Unassigned */}
+              {unassignedItems.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 flex flex-col gap-3">
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                    Unassigned
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <AnimatePresence initial={false}>
+                      {unassignedItems.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.96 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="flex items-center justify-between gap-2 border border-black/10 rounded-xl p-2.5"
+                        >
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">
+                              {item.name || "Untitled item"}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              ₱{Number(item.price || 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              ref={hapticTrigger}
+                              onClick={() => openEditSplitForUnassignedItem(item)}
+                              className="text-xs font-semibold text-orange bg-orange-tint px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-95"
+                            >
+                              Assign
+                            </button>
+                            <button
+                              ref={hapticTrigger}
+                              onClick={() => removeUnassignedItem(item.id)}
+                            >
+                              <TrashIcon className="w-3.5 text-text-secondary/40" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+
               {/* Person cards */}
               <AnimatePresence initial={false}>
                 {persons.map((person) => (
@@ -898,18 +1099,16 @@ export default function NewBillPage() {
                                     className="w-14 text-sm font-semibold text-orange outline-none"
                                   />
                                 </div>
-                                {person.items.length > 1 && (
-                                  <button
-                                    ref={hapticTrigger}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeItem(person.id, item.id);
-                                    }}
-                                    className="shrink-0"
-                                  >
-                                    <TrashIcon className="w-3.5 text-text-secondary/40" />
-                                  </button>
-                                )}
+                                <button
+                                  ref={hapticTrigger}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeItem(person.id, item.id);
+                                  }}
+                                  className="shrink-0"
+                                >
+                                  <TrashIcon className="w-3.5 text-text-secondary/40" />
+                                </button>
                                 <ChevronRightIcon className="w-4 text-text-secondary/40 shrink-0" />
                               </div>
 

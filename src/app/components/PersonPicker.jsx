@@ -147,7 +147,7 @@ export function PersonPicker({
   }
 
   return (
-    <div className="font-body flex flex-col items-start w-full gap-4 max-h-[70vh] overflow-y-auto">
+    <div className="font-body flex flex-col items-start w-full gap-4 max-h-[70vh] overflow-y-auto pb-17">
       {!isSingle && (
         <p className="text-xs text-text-secondary bg-orange-tint/60 rounded-xl px-3 py-2 w-full">
           Tip: Select more than one person to split this item between them.

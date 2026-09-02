@@ -30,6 +30,9 @@
   --breakpoint-mobile: 390px;
 }
 
+/* TEMP: force mobile layout for local desktop-browser testing */
+main.lg\:hidden { display: flex !important; }
+
 .gradient-button {
   background-image: linear-gradient(to bottom, #fb923c, #ea6c10);
   border-bottom: 1px solid #c2560d;

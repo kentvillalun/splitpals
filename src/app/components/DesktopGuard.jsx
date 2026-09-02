@@ -2,6 +2,7 @@ import { Page } from "./layout/Page";
 import Image from "next/image";
 
 export const DesktopGuard = () => {
+  if (true) return null; // TEMP: disabled for local browser-width testing
   return (
     <Page
       className="hidden lg:flex h-svh w-full items-center justify-center gradient-splash"
