@@ -22,6 +22,7 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { AddPersonSheet } from "@/app/components/AddPersonSheet";
 import { AddSharedItemSheet } from "@/app/components/AddSharedItemSheet";
+import { AddItemSheet } from "@/app/components/AddItemSheet";
 import { EditItemSplitSheet } from "@/app/components/EditItemSplitSheet";
 import { useCurrentUser } from "@/app/lib/hooks/useCurrentUser";
 import { getPersonDisplayName, withDisplayNames } from "@/app/lib/displayName";
@@ -65,7 +66,7 @@ function resolvePersonSelection(
       name: contact.name,
       contactId: contact.id,
       userId: null,
-      items: [{ id: tempId(), name: "", price: "", note: "" }],
+      items: [],
     };
     newPersons.push(newPerson);
     personIds.push(newPerson.id);
@@ -83,7 +84,7 @@ function resolvePersonSelection(
       name,
       contactId: null,
       userId: null,
-      items: [{ id: tempId(), name: "", price: "", note: "" }],
+      items: [],
     };
     newPersons.push(newPerson);
     personIds.push(newPerson.id);
@@ -99,7 +100,7 @@ function resolvePersonSelection(
         name: currentUser.name,
         contactId: null,
         userId: currentUser.id,
-        items: [{ id: tempId(), name: "", price: "", note: "" }],
+        items: [],
       };
       newPersons.push(newPerson);
       personIds.push(newPerson.id);
@@ -143,15 +144,27 @@ export default function EditBillPage() {
   const [contacts, setContacts] = useState([]);
   const [addPersonSheetOpen, setAddPersonSheetOpen] = useState(false);
   const [sharedItems, setSharedItems] = useState([]);
-  // Shared items that lost every participant (via removeShare) land here
-  // instead of being deleted outright — same "Unassigned" bucket as the scan
-  // flow's AssignItemsPage. Save/Review stays blocked while anything is in
-  // here, so an unassigned item never needs to be persisted (see hasValidItem)
-  // — this never needs to be seeded from the loaded bill, since a DB item can
+  // Items that lost their only owner land here instead of being deleted
+  // outright — same "Unassigned" bucket as the scan flow's AssignItemsPage.
+  // A shared item can only ever get here in two steps: the edit sheet first
+  // shrinks it down to one remaining person (converting it to that person's
+  // individual item — see handleEditSplitConfirm, which can never confirm
+  // down to zero people since the picker disables its own confirm button at
+  // that point), then removeItem parks it here if that individual item is
+  // later removed too. Save/Review stays blocked while anything is in here,
+  // so an unassigned item never needs to be persisted (see hasValidItem) —
+  // this never needs to be seeded from the loaded bill, since a DB item can
   // never actually exist with no assignee (items.person_id has to resolve
   // through RLS's persons → bills → user_id join).
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [sharedItemSheetOpen, setSharedItemSheetOpen] = useState(false);
+  // Drives AddItemSheet (name/price only, no person-picker) — either
+  // { personId, item: null } for "Add item" (creating a new one), or
+  // { personId, item } for tapping an existing SOLO item's row: its owner is
+  // already fixed by which card it's in, so it stays the simple sheet too.
+  // A shared item's row uses editSplitTarget/the full sheet instead, since
+  // reassignment is genuinely on the table there.
+  const [simpleItemTarget, setSimpleItemTarget] = useState(null);
   const [editSplitTarget, setEditSplitTarget] = useState(null);
   const [removePersonId, setRemovePersonId] = useState(null);
 
@@ -243,10 +256,12 @@ export default function EditBillPage() {
           isPaid: p.is_paid,
           contactId: p.contact_id ?? null,
           userId: p.user_id ?? null,
-          items:
-            individualItems.length > 0
-              ? individualItems
-              : [{ id: tempId(), name: "", price: "", note: "" }],
+          // No forced blank starter row here — a person whose only real
+          // items are shared ones (or who genuinely has nothing yet) just
+          // gets an empty individual-items array. "Add item" can always
+          // create a fresh row on demand, same reasoning as the trash icon
+          // no longer being hidden on a person's last item.
+          items: individualItems,
         };
       });
 
@@ -285,7 +300,7 @@ export default function EditBillPage() {
         name: currentUser.name,
         contactId: null,
         userId: currentUser.id,
-        items: [{ id: tempId(), name: "", price: "", note: "" }],
+        items: [],
       },
     ]);
   }, [isLoading, persons.length, currentUser]);
@@ -341,7 +356,7 @@ export default function EditBillPage() {
       {
         id: tempId(),
         ...newPerson,
-        items: [{ id: tempId(), name: "", price: "", note: "" }],
+        items: [],
       },
     ]);
     setAddPersonSheetOpen(false);
@@ -355,8 +370,8 @@ export default function EditBillPage() {
   // it there would silently double the remaining person's total once a new
   // item is added later. One that drops to zero remaining people really is
   // gone (this person's removal is an explicit, confirmed deletion — see
-  // removePerson below — unlike removeShare, which parks orphaned items in
-  // Unassigned instead of deleting them).
+  // removePerson below — unlike removeItem, which parks a removed individual
+  // item in Unassigned instead of deleting it outright).
   function removePersonAndCleanup(personId) {
     const orphanedToSingle = sharedItems
       .filter((item) => item.personIds.includes(personId))
@@ -460,117 +475,7 @@ export default function EditBillPage() {
     setSharedItemSheetOpen(false);
   }
 
-  // Removes just one person from a shared item's split — mirrors the scan
-  // flow's handleRemoveShare. What happens to the item next depends on how
-  // many people are left:
-  //  - 2+ remaining: still genuinely shared, just shrinks personIds.
-  //  - 1 remaining: no longer a split — converted into that person's
-  //    individual item (same convention as handleEditSplitConfirm) instead of
-  //    surviving in sharedItems at its full, unsplit price. Leaving it there
-  //    was the root cause of a bug where "removing" a shared item and adding
-  //    a replacement left the old item alive, tied to whoever was left, at
-  //    full price — silently double-counted once the replacement was saved.
-  //  - 0 remaining: parked in Unassigned rather than deleted, since this is a
-  //    lightweight, undo-able action rather than a confirmed deletion. It
-  //    keeps its real DB id, so the save flow's delete-diff (originalItemIds
-  //    vs currentItemIds) would otherwise think it's still "current" and
-  //    never clean it up — Unassigned staying non-empty blocks Save entirely
-  //    instead, so that mismatch can't reach handleConfirmSave at all.
-  // Lightweight undo via a toast action rather than a confirmation dialog —
-  // losing a split is cheap to recover from, unlike removePerson's "their
-  // items get deleted" stakes.
-  function removeShare(itemId, personId) {
-    const item = sharedItems.find((i) => i.id === itemId);
-    if (!item) return;
-
-    const remainingIds = item.personIds.filter((id) => id !== personId);
-    const person = persons.find((p) => p.id === personId);
-    const personName = person ? getPersonDisplayName(person, currentUser?.id) : "";
-
-    if (remainingIds.length >= 2) {
-      setSharedItems((prev) =>
-        prev.map((i) => (i.id === itemId ? { ...i, personIds: remainingIds } : i))
-      );
-    } else if (remainingIds.length === 1) {
-      const [onlyId] = remainingIds;
-      setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
-      setPersons((prev) =>
-        prev.map((p) =>
-          p.id === onlyId
-            ? {
-                ...p,
-                items: [
-                  ...p.items,
-                  { id: item.id, name: item.name, price: String(item.price), note: "" },
-                ],
-              }
-            : p
-        )
-      );
-    } else {
-      setSharedItems((prev) => prev.filter((i) => i.id !== itemId));
-      setUnassignedItems((prev) => {
-        const next = [...prev, { id: item.id, name: item.name, price: item.price }];
-        console.error("[TEMP DEBUG] moving item to unassigned:", item, "next unassignedItems:", next);
-        return next;
-      });
-    }
-
-    toast(`Removed "${item.name || "Item"}" from ${personName || "their"} split`, {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          if (remainingIds.length >= 2) {
-            setSharedItems((prev) => {
-              const current = prev.find((i) => i.id === itemId);
-              if (!current || current.personIds.includes(personId)) return prev;
-              return prev.map((i) =>
-                i.id === itemId ? { ...i, personIds: [...i.personIds, personId] } : i
-              );
-            });
-          } else if (remainingIds.length === 1) {
-            const [onlyId] = remainingIds;
-            setPersons((prev) => {
-              const owner = prev.find((p) => p.id === onlyId);
-              if (!owner?.items.some((i) => i.id === itemId)) return prev;
-              return prev.map((p) =>
-                p.id === onlyId
-                  ? { ...p, items: p.items.filter((i) => i.id !== itemId) }
-                  : p
-              );
-            });
-            setSharedItems((prev) =>
-              prev.some((i) => i.id === itemId) ? prev : [...prev, item]
-            );
-          } else {
-            setUnassignedItems((prev) =>
-              prev.some((i) => i.id === itemId)
-                ? prev.filter((i) => i.id !== itemId)
-                : prev
-            );
-            setSharedItems((prev) =>
-              prev.some((i) => i.id === itemId) ? prev : [...prev, item]
-            );
-          }
-        },
-      },
-    });
-  }
-
-  // ── Edit an item's split (chevron on an item row or a shared item row) ──
-  function openEditSplitForItem(item, person) {
-    setEditSplitTarget({
-      item: {
-        id: item.id,
-        name: item.name,
-        price: parseFloat(item.price) || 0,
-        note: item.note,
-      },
-      initialPersonIds: [person.id],
-    });
-  }
-
+  // ── Edit an item's split (chevron on a shared item row) ──
   function openEditSplitForSharedItem(item) {
     setEditSplitTarget({
       item: { id: item.id, name: item.name, price: item.price, note: "" },
@@ -618,17 +523,25 @@ export default function EditBillPage() {
   // contacts, typed fresh, or YOU), which get created here alongside
   // reassigning the item.
   //
-  // item.price is always carried through unchanged — it's the item's fixed
-  // total, never recalculated off however many people end up sharing it.
-  // Each participant's share is a derived, display-time-only value
-  // (price / personIds.length) computed where it's shown, never stored.
+  // The sheet's own name/price card (EditItemSplitSheet) is the only place a
+  // shared item's name or price can be corrected after creation, since a
+  // shared item's row only shows a read-only per-person share, not an
+  // editable price — so this always uses the sheet's edited name/price
+  // rather than the item's original values. price is stored as the item's
+  // fixed total either way, never recalculated off however many people end
+  // up sharing it — each participant's share is a derived, display-time-only
+  // value (price / personIds.length) computed where it's shown, never stored.
   function handleEditSplitConfirm({
     existingPersonIds,
     contacts: selectedContacts,
     newNames,
     includeYou,
+    name,
+    price,
   }) {
     const { item } = editSplitTarget;
+    const finalName = name?.trim() || item.name;
+    const finalPrice = Number.isFinite(price) ? price : item.price;
 
     const { personIds: selectedIds, newPersons } = resolvePersonSelection(
       persons,
@@ -649,7 +562,7 @@ export default function EditBillPage() {
     if (selectedIds.length > 1) {
       setSharedItems((prev) => [
         ...prev,
-        { id: item.id, name: item.name, price: item.price, personIds: selectedIds },
+        { id: item.id, name: finalName, price: finalPrice, personIds: selectedIds },
       ]);
     } else {
       const [onlyId] = selectedIds;
@@ -662,8 +575,8 @@ export default function EditBillPage() {
                   ...p.items,
                   {
                     id: item.id,
-                    name: item.name,
-                    price: String(item.price),
+                    name: finalName,
+                    price: String(finalPrice),
                     note: item.note ?? "",
                   },
                 ],
@@ -676,76 +589,129 @@ export default function EditBillPage() {
     setEditSplitTarget(null);
   }
 
-  // ── Item management ──
-  function addItem(personId) {
-    setPersons((prev) =>
-      prev.map((p) =>
-        p.id === personId
-          ? {
-              ...p,
-              items: [...p.items, { id: tempId(), name: "", price: "", note: "" }],
-            }
-          : p
-      )
-    );
-  }
-
-  // Lightweight undo via a toast action rather than a confirmation dialog —
-  // an individual item is quick to re-type, so it doesn't need the same
-  // "are you sure" gate as removePerson.
-  //
-  // An individual item only ever has one owner, so removing it here is
-  // always that item's sole connection to anyone — same as removeShare's
-  // last-person case — so a *valid* one (real name + price, not an empty
-  // draft row) is parked in Unassigned instead of being lost outright. An
-  // invalid/blank row (e.g. the default empty item a new person starts
-  // with) has nothing worth preserving, so it's just dropped as before.
-  function removeItem(personId, itemId) {
-    const person = persons.find((p) => p.id === personId);
-    const itemIndex = person ? person.items.findIndex((i) => i.id === itemId) : -1;
-    const removedItem = itemIndex > -1 ? person.items[itemIndex] : null;
+  // The sheet's own "Delete" action (person-card items only — see onDelete's
+  // wiring below) — a full removal, distinct from unchecking everyone in the
+  // picker (which parks the item in Unassigned instead). Lightweight undo
+  // via a toast action, same pattern as every other deletion on this page —
+  // reads item/initialPersonIds from editSplitTarget via closure before
+  // clearing it, so the undo callback still has what it needs afterward.
+  function handleDeleteItem() {
+    const { item, initialPersonIds } = editSplitTarget;
 
     setPersons((prev) =>
-      prev.map((p) =>
-        p.id === personId
-          ? { ...p, items: p.items.filter((i) => i.id !== itemId) }
-          : p
-      )
+      prev.map((p) => ({ ...p, items: p.items.filter((i) => i.id !== item.id) }))
     );
+    setSharedItems((prev) => prev.filter((i) => i.id !== item.id));
+    setUnassignedItems((prev) => prev.filter((i) => i.id !== item.id));
+    setEditSplitTarget(null);
 
-    if (!removedItem) return;
-
-    const isValid = Boolean(
-      removedItem.name.trim() && parseFloat(removedItem.price) > 0
-    );
-
-    if (isValid) {
-      setUnassignedItems((prev) => [
-        ...prev,
-        { id: removedItem.id, name: removedItem.name, price: parseFloat(removedItem.price) },
-      ]);
-    }
-
-    toast(`Removed "${removedItem.name || "Item"}"`, {
+    toast(`Removed "${item.name || "Item"}"`, {
       duration: 5000,
       action: {
         label: "Undo",
         onClick: () => {
-          if (isValid) {
-            setUnassignedItems((prev) =>
-              prev.some((i) => i.id === itemId)
-                ? prev.filter((i) => i.id !== itemId)
-                : prev
+          if (initialPersonIds.length > 1) {
+            setSharedItems((prev) =>
+              prev.some((i) => i.id === item.id)
+                ? prev
+                : [
+                    ...prev,
+                    { id: item.id, name: item.name, price: item.price, personIds: initialPersonIds },
+                  ]
+            );
+          } else {
+            const [onlyId] = initialPersonIds;
+            setPersons((prev) =>
+              prev.map((p) =>
+                p.id === onlyId && !p.items.some((i) => i.id === item.id)
+                  ? {
+                      ...p,
+                      items: [
+                        ...p.items,
+                        {
+                          id: item.id,
+                          name: item.name,
+                          price: String(item.price),
+                          note: item.note ?? "",
+                        },
+                      ],
+                    }
+                  : p
+              )
             );
           }
+        },
+      },
+    });
+  }
+
+  // ── Item management ──
+  function openAddItemSheet(personId) {
+    setSimpleItemTarget({ personId, item: null });
+  }
+
+  // A solo item's owner is already fixed by which card it's in — tapping its
+  // row (whether freshly blank or already filled in) opens the same simple
+  // sheet as "Add item", not the full picker-based one. Only a genuinely
+  // shared item's row (openEditSplitForSharedItem) opens the full sheet.
+  function openSimpleEditForItem(item, person) {
+    setSimpleItemTarget({ personId: person.id, item });
+  }
+
+  // The assignee is already fixed by context — AddItemSheet only collects
+  // name/price/note, so this either creates a new item directly under that
+  // person ("Add item") or updates an existing solo item in place (tapped
+  // from its row).
+  function handleSimpleItemConfirm({ name, price, note }) {
+    const { personId, item } = simpleItemTarget;
+
+    setPersons((prev) =>
+      prev.map((p) => {
+        if (p.id !== personId) return p;
+        if (item) {
+          return {
+            ...p,
+            items: p.items.map((i) =>
+              i.id === item.id ? { ...i, name, price: String(price), note } : i
+            ),
+          };
+        }
+        return {
+          ...p,
+          items: [...p.items, { id: tempId(), name, price: String(price), note }],
+        };
+      })
+    );
+    setSimpleItemTarget(null);
+  }
+
+  // Delete from the simple sheet (existing solo item only — no-op in "Add
+  // item" mode since there's nothing to delete yet). Same undo-toast pattern
+  // as every other deletion on this page.
+  function handleDeleteSimpleItem() {
+    const { personId, item } = simpleItemTarget;
+    if (!item) return;
+
+    setPersons((prev) =>
+      prev.map((p) =>
+        p.id === personId
+          ? { ...p, items: p.items.filter((i) => i.id !== item.id) }
+          : p
+      )
+    );
+    setSimpleItemTarget(null);
+
+    toast(`Removed "${item.name || "Item"}"`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
           setPersons((prev) =>
-            prev.map((p) => {
-              if (p.id !== personId) return p;
-              if (p.items.some((i) => i.id === itemId)) return p;
-              const items = [...p.items];
-              items.splice(Math.min(itemIndex, items.length), 0, removedItem);
-              return { ...p, items };
-            })
+            prev.map((p) =>
+              p.id === personId && !p.items.some((i) => i.id === item.id)
+                ? { ...p, items: [...p.items, item] }
+                : p
+            )
           );
         },
       },
@@ -1242,15 +1208,6 @@ export default function EditBillPage() {
                                       <p className="text-sm font-semibold text-orange">
                                         ₱{share.toFixed(2)}
                                       </p>
-                                      <button
-                                        ref={hapticTrigger}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          removeShare(item.id, person.id);
-                                        }}
-                                      >
-                                        <TrashIcon className="w-3.5 text-text-secondary/40" />
-                                      </button>
                                       <ChevronRightIcon className="w-4 text-text-secondary/40" />
                                     </div>
                                   </div>
@@ -1270,55 +1227,19 @@ export default function EditBillPage() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.96 }}
                               transition={{ duration: 0.2, ease: "easeOut" }}
-                              onClick={() => openEditSplitForItem(item, person)}
+                              onClick={() => openSimpleEditForItem(item, person)}
                               className="border border-black/10 rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-colors duration-150 active:bg-black/5"
                             >
-                              <div className="flex items-center gap-2">
-                                <input
-                                  value={item.name}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) =>
-                                    updateItem(
-                                      person.id,
-                                      item.id,
-                                      "name",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Item name"
-                                  className="flex-1 text-sm outline-none min-w-0"
-                                />
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <span className="text-sm text-text-secondary">
-                                    ₱
-                                  </span>
-                                  <input
-                                    value={item.price}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) =>
-                                      updateItem(
-                                        person.id,
-                                        item.id,
-                                        "price",
-                                        e.target.value.replace(/[^0-9.]/g, "")
-                                      )
-                                    }
-                                    placeholder="0"
-                                    inputMode="decimal"
-                                    className="w-14 text-sm font-semibold text-orange outline-none"
-                                  />
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium truncate min-w-0 flex-1">
+                                  {item.name || "Item name"}
+                                </p>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <p className="text-sm font-semibold text-orange">
+                                    ₱{Number(item.price || 0).toFixed(2)}
+                                  </p>
+                                  <ChevronRightIcon className="w-4 text-text-secondary/40" />
                                 </div>
-                                <button
-                                  ref={hapticTrigger}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeItem(person.id, item.id);
-                                  }}
-                                  className="shrink-0"
-                                >
-                                  <TrashIcon className="w-3.5 text-text-secondary/40" />
-                                </button>
-                                <ChevronRightIcon className="w-4 text-text-secondary/40 shrink-0" />
                               </div>
 
                               <input
@@ -1342,7 +1263,7 @@ export default function EditBillPage() {
 
                       <button
                         ref={hapticTrigger}
-                        onClick={() => addItem(person.id)}
+                        onClick={() => openAddItemSheet(person.id)}
                         className="flex items-center justify-center gap-1.5 mt-1 py-2 rounded-xl border border-dashed border-orange/40 text-orange text-sm font-semibold bg-orange-tint/50 transition-all duration-150 active:scale-95"
                       >
                         <PlusIcon className="w-4" />
@@ -1597,6 +1518,16 @@ export default function EditBillPage() {
         />
       )}
 
+      {simpleItemTarget && (
+        <AddItemSheet
+          key={simpleItemTarget.item?.id ?? "new"}
+          item={simpleItemTarget.item}
+          onAdd={handleSimpleItemConfirm}
+          onDelete={simpleItemTarget.item ? handleDeleteSimpleItem : undefined}
+          onClose={() => setSimpleItemTarget(null)}
+        />
+      )}
+
       {editSplitTarget && (
         <EditItemSplitSheet
           key={editSplitTarget.item.id}
@@ -1607,6 +1538,11 @@ export default function EditBillPage() {
           showYou={showYou}
           initialPersonIds={editSplitTarget.initialPersonIds}
           onConfirm={handleEditSplitConfirm}
+          onDelete={
+            editSplitTarget.initialPersonIds.length > 0
+              ? handleDeleteItem
+              : undefined
+          }
           onClose={() => setEditSplitTarget(null)}
         />
       )}

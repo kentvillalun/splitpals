@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRightIcon,
   TrashIcon,
-  XMarkIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { DesktopGuard } from "@/app/components/DesktopGuard";
@@ -54,9 +53,6 @@ export default function AssignItemsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [assigningItem, setAssigningItem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  // Keyed by item id — holds the raw text of a price being typed so partial
-  // input like "12." isn't clobbered by reformatting on every keystroke.
-  const [priceDrafts, setPriceDrafts] = useState({});
 
   useEffect(() => {
     setMounted(true);
@@ -147,11 +143,17 @@ export default function AssignItemsPage() {
     setAssigningItem(item);
   }
 
+  // name/price come from AssignItemSheet's own editable card — same
+  // fallback-to-original convention as the manual entry flow's
+  // handleEditSplitConfirm, since this is the only place an item's name or
+  // price can be corrected now that rows are display-only.
   function handleAssignCommit({
     existingPersonIds,
     contacts: selectedContacts,
     newNames,
     includeYou,
+    name,
+    price,
   }) {
     const newPersonsFromContacts = selectedContacts.map((contact) => ({
       id: tempId(),
@@ -183,12 +185,42 @@ export default function AssignItemsPage() {
     setItems((prev) =>
       prev.map((item) =>
         item.id === assigningItem.id
-          ? { ...item, assignedTo: [...new Set(allAssigneeIds)] }
+          ? {
+              ...item,
+              assignedTo: [...new Set(allAssigneeIds)],
+              name: name?.trim() || item.name,
+              price: Number.isFinite(price) ? price : item.price,
+            }
           : item
       )
     );
 
     setAssigningItem(null);
+  }
+
+  // The sheet's own "Delete" action (person-card items only — see onDelete's
+  // wiring below) — a full removal, distinct from unchecking everyone in the
+  // picker (which parks the item in Unassigned instead). Lightweight undo
+  // via a toast action, same pattern as the manual entry pages' deletions —
+  // captures the full item via closure before clearing assigningItem, so the
+  // undo callback can restore it exactly as it was.
+  function handleDeleteItem() {
+    const item = assigningItem;
+
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setAssigningItem(null);
+
+    toast(`Removed "${item.name || "Item"}"`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setItems((prev) =>
+            prev.some((i) => i.id === item.id) ? prev : [...prev, item]
+          );
+        },
+      },
+    });
   }
 
   function removePerson(personId) {
@@ -200,44 +232,6 @@ export default function AssignItemsPage() {
           : item
       )
     );
-  }
-
-  function handleRemoveShare(itemId, personId) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? { ...item, assignedTo: item.assignedTo.filter((id) => id !== personId) }
-          : item
-      )
-    );
-  }
-
-  // The price shown/edited on an item's row is always "price per sharer" —
-  // for an unassigned item that's just the price itself (divisor 1), so the
-  // same input works for both the unassigned list and each person's rows.
-  function handlePriceInput(item, value) {
-    if (/^\d*\.?\d{0,2}$/.test(value)) {
-      setPriceDrafts((prev) => ({ ...prev, [item.id]: value }));
-    }
-  }
-
-  function commitPriceEdit(item) {
-    const draft = priceDrafts[item.id];
-    if (draft !== undefined) {
-      const parsed = parseFloat(draft);
-      if (!Number.isNaN(parsed) && parsed >= 0) {
-        const divisor = item.assignedTo.length || 1;
-        const newPrice = parsed * divisor;
-        setItems((prev) =>
-          prev.map((i) => (i.id === item.id ? { ...i, price: newPrice } : i))
-        );
-      }
-    }
-    setPriceDrafts((prev) => {
-      const next = { ...prev };
-      delete next[item.id];
-      return next;
-    });
   }
 
   function personSubtotal(personId) {
@@ -452,28 +446,12 @@ export default function AssignItemsPage() {
                             <p className="text-sm font-medium truncate">
                               {item.name}
                             </p>
-                            <div className="flex items-center gap-0.5">
-                              <span className="text-xs text-text-secondary">
-                                ₱
-                              </span>
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                value={
-                                  priceDrafts[item.id] ?? item.price.toFixed(2)
-                                }
-                                onChange={(e) =>
-                                  handlePriceInput(item, e.target.value)
-                                }
-                                onBlur={() => commitPriceEdit(item)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") e.target.blur();
-                                }}
-                                className="w-14 text-xs text-text-secondary bg-transparent border-b border-dashed border-black/20 focus:border-orange focus:outline-none"
-                              />
-                            </div>
+                            <p className="text-xs text-text-secondary">
+                              ₱{item.price.toFixed(2)}
+                            </p>
                           </div>
                           <button
+                            ref={hapticTrigger}
                             onClick={() => handleAssignTap(item)}
                             className="shrink-0 text-xs font-semibold text-orange bg-orange-tint px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-95"
                           >
@@ -558,37 +536,9 @@ export default function AssignItemsPage() {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <div className="flex items-center gap-0.5">
-                                      <span className="text-sm font-semibold text-orange">
-                                        ₱
-                                      </span>
-                                      <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={
-                                          priceDrafts[item.id] ??
-                                          share.toFixed(2)
-                                        }
-                                        onChange={(e) =>
-                                          handlePriceInput(item, e.target.value)
-                                        }
-                                        onBlur={() => commitPriceEdit(item)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") e.target.blur();
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="w-14 text-sm font-semibold text-orange bg-transparent border-b border-dashed border-orange/30 focus:border-orange focus:outline-none"
-                                      />
-                                    </div>
-                                    <button
-                                      ref={hapticTrigger}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveShare(item.id, person.id);
-                                      }}
-                                    >
-                                      <XMarkIcon className="w-3.5 text-text-secondary/40" />
-                                    </button>
+                                    <p className="text-sm font-semibold text-orange">
+                                      ₱{share.toFixed(2)}
+                                    </p>
                                     <ChevronRightIcon className="w-4 text-text-secondary/40" />
                                   </div>
                                 </motion.div>
@@ -719,6 +669,9 @@ export default function AssignItemsPage() {
           showYou={showYou}
           initialPersonIds={assigningItem.assignedTo}
           onAssign={handleAssignCommit}
+          onDelete={
+            assigningItem.assignedTo.length > 0 ? handleDeleteItem : undefined
+          }
           onClose={() => setAssigningItem(null)}
         />
       )}

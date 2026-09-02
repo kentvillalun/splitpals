@@ -55,6 +55,8 @@ export function SelectableRow({ label, selected, onToggle, disabled = false }) {
  * - confirmLabel: label for the confirm button (before any "(N selected)" suffix)
  * - disabled: extra condition (e.g. other required fields not filled in yet)
  *   that keeps the confirm button disabled regardless of selection
+ * - note: optional small muted line rendered just above the confirm button
+ *   (e.g. EditItemSplitSheet/AssignItemSheet's "uncheck to remove" tip)
  * - onConfirm: ({ existingPersonIds, contacts, newNames, includeYou }) => void
  */
 export function PersonPicker({
@@ -66,6 +68,7 @@ export function PersonPicker({
   confirmLabel = "Assign",
   initialPersonIds = [],
   disabled = false,
+  note = null,
   onConfirm,
 }) {
   const [selectedPersonIds, setSelectedPersonIds] = useState(initialPersonIds);
@@ -147,7 +150,7 @@ export function PersonPicker({
   }
 
   return (
-    <div className="font-body flex flex-col items-start w-full gap-4 max-h-[70vh] overflow-y-auto pb-17">
+    <div className="font-body flex flex-col items-start w-full gap-4 max-h-[60vh] overflow-y-auto pb-17">
       {!isSingle && (
         <p className="text-xs text-text-secondary bg-orange-tint/60 rounded-xl px-3 py-2 w-full">
           Tip: Select more than one person to split this item between them.
@@ -241,6 +244,8 @@ export function PersonPicker({
           the same person.
         </p>
       </div>
+
+      {note && <p className="text-xs text-text-secondary">{note}</p>}
 
       <button
         onClick={handleConfirmTap}

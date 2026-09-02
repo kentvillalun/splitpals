@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const BottomSheet = ({ children, setSheetOpen, sheetClassName = "pb-0" }) => { // Dont touch this, this is intentional
+export const BottomSheet = ({ children, setSheetOpen, sheetClassName = "pb-17" }) => { // Dont touch this, this is intentional
   return createPortal(
     <AnimatePresence>
       <motion.div
