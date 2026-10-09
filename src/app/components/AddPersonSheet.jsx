@@ -18,7 +18,7 @@ export const AddPersonSheet = ({
   onClose,
 }) => {
   return (
-    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0!">
+    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0! max-h-[85%]">
       <div className="flex flex-col items-start w-full gap-4 font-body">
         <h1 className="font-display text-text-primary text-xl font-bold">
           Add a person
@@ -34,6 +34,7 @@ export const AddPersonSheet = ({
           onConfirm={onAdd}
         />
       </div>
+      <div className="min-h-10" />
     </BottomSheet>
   );
 };

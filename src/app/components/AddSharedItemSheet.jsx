@@ -42,8 +42,8 @@ export const AddSharedItemSheet = ({
   }
 
   return (
-    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0">
-      <div className="flex flex-col items-start w-full gap-4 font-body">
+    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0 px-0! max-h-[85%]">
+      <div className="flex flex-col items-start w-full gap-4 font-body overflow-y-auto px-5">
         <h1 className="font-display text-text-primary text-xl font-bold">
           Add shared item
         </h1>
@@ -91,7 +91,9 @@ export const AddSharedItemSheet = ({
           confirmLabel="Add item"
           disabled={!hasValidItem}
           onConfirm={handleConfirm}
+          wrapperClassName="pb-10!"
         />
+        <div className="min-h-10"/>
       </div>
     </BottomSheet>
   );

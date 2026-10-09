@@ -70,6 +70,7 @@ export function PersonPicker({
   disabled = false,
   note = null,
   onConfirm,
+  wrapperClassName = 'overflow-y-auto'
 }) {
   const [selectedPersonIds, setSelectedPersonIds] = useState(initialPersonIds);
   const [selectedContactIds, setSelectedContactIds] = useState([]);
@@ -150,7 +151,7 @@ export function PersonPicker({
   }
 
   return (
-    <div className="font-body flex flex-col items-start w-full gap-4 max-h-[60vh] overflow-y-auto pb-17">
+    <div className={`font-body flex flex-col items-start w-full gap-4 ${wrapperClassName}`}>
       {!isSingle && (
         <p className="text-xs text-text-secondary bg-orange-tint/60 rounded-xl px-3 py-2 w-full">
           Tip: Select more than one person to split this item between them.
@@ -255,6 +256,7 @@ export function PersonPicker({
         {confirmLabel}
         {!isSingle && selectedCount > 0 ? ` (${selectedCount} selected)` : ""}
       </button>
+      
     </div>
   );
 }

@@ -51,8 +51,8 @@ export const AssignItemSheet = ({
   }
 
   return (
-    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0!">
-      <div className="flex flex-col items-start w-full gap-4 font-body">
+    <BottomSheet setSheetOpen={onClose} sheetClassName="pb-0! px-0! max-h-[85%]">
+      <div className="flex flex-col items-start w-full gap-4 font-body px-5 overflow-y-auto">
         <div className="flex items-center justify-between w-full">
           <h1 className="font-display text-text-primary text-xl font-bold">
             Assign item
@@ -118,7 +118,9 @@ export const AssignItemSheet = ({
               : undefined
           }
           onConfirm={handleConfirm}
+          wrapperClassName=""
         />
+        <div className="min-h-10"/>
       </div>
     </BottomSheet>
   );
